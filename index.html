@@ -1,1 +1,1083 @@
-a
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>è·å¸ãå®¢åç®¡ç</title>
+  <style>
+    :root {
+      --primary: #1a6fc4;
+      --primary-dark: #145099;
+      --primary-light: #e8f1fb;
+      --ester-color: #7c3aed;
+      --ester-light: #f3eeff;
+      --sulfuric-color: #b45309;
+      --sulfuric-light: #fef3c7;
+      --polymer-color: #0e7490;
+      --polymer-light: #ecfeff;
+      --danger: #e53e3e;
+      --success: #38a169;
+      --success-light: #f0fff4;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-300: #d1d5db;
+      --gray-400: #9ca3af;
+      --gray-500: #6b7280;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-800: #1f2937;
+      --gray-900: #111827;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.10);
+      --shadow-lg: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+      background: var(--gray-100);
+      color: var(--gray-800);
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* ===== HEADER ===== */
+    .app-header {
+      background: var(--primary);
+      color: white;
+      padding: 14px 16px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow);
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .app-title { font-size: 17px; font-weight: 700; }
+    .app-subtitle { font-size: 11px; opacity: 0.8; margin-top: 1px; }
+
+    /* Search */
+    .search-wrap { position: relative; margin-bottom: 10px; }
+    .search-input {
+      width: 100%;
+      padding: 9px 16px 9px 36px;
+      border-radius: 24px;
+      border: none;
+      font-size: 14px;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      outline: none;
+    }
+    .search-input::placeholder { color: rgba(255,255,255,0.7); }
+    .search-icon {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    /* ===== TABS ===== */
+    .tab-bar {
+      display: flex;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 4px 8px;
+      background: none;
+      border: none;
+      color: rgba(255,255,255,0.65);
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      font-family: inherit;
+    }
+    .tab-btn.active {
+      color: white;
+      border-bottom-color: white;
+    }
+    .tab-btn .tab-icon { display: block; font-size: 16px; margin-bottom: 1px; }
+
+    /* ===== MAIN CONTENT ===== */
+    .main-content { padding: 14px; padding-bottom: 90px; }
+
+    /* ===== REGION GROUP ===== */
+    .region-group { margin-bottom: 16px; }
+    .region-header {
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--ester-color);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 4px 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .region-header::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--ester-color);
+      opacity: 0.3;
+    }
+
+    /* ===== CUSTOMER CARD ===== */
+    .customer-list { display: flex; flex-direction: column; gap: 8px; }
+    .customer-card {
+      background: white;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 12px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: transform 0.1s;
+      border-left: 4px solid transparent;
+    }
+    .customer-card:active { transform: scale(0.98); }
+    .customer-card.meigara-ester  { border-left-color: var(--ester-color); }
+    .customer-card.meigara-sulfuric { border-left-color: var(--sulfuric-color); }
+    .customer-card.meigara-polymer { border-left-color: var(--polymer-color); }
+
+    .card-avatar {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      background: var(--gray-100);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; flex-shrink: 0; overflow: hidden;
+    }
+    .card-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+    .card-body { flex: 1; min-width: 0; }
+    .card-name {
+      font-size: 15px; font-weight: 700;
+      color: var(--gray-900);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .card-sub {
+      font-size: 12px; color: var(--gray-500);
+      margin-top: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .card-tags { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+    .tag {
+      font-size: 10px; padding: 2px 7px;
+      border-radius: 99px; font-weight: 600;
+    }
+    .tag-tank  { background: #dbeafe; color: #1e40af; }
+    .tag-note  { background: #fef9c3; color: #854d0e; }
+    .tag-photo { background: #dcfce7; color: #166534; }
+    .card-arrow { font-size: 18px; color: var(--gray-300); }
+
+    .customer-count {
+      font-size: 12px; color: var(--gray-500);
+      margin-bottom: 8px; font-weight: 500;
+    }
+
+    /* Empty */
+    .empty-state { text-align: center; padding: 50px 20px; color: var(--gray-400); }
+    .empty-icon  { font-size: 56px; margin-bottom: 10px; }
+    .empty-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .empty-sub   { font-size: 13px; }
+
+    /* FAB */
+    .fab {
+      position: fixed; bottom: 24px; right: 24px;
+      width: 58px; height: 58px;
+      border-radius: 50%;
+      background: var(--primary); color: white;
+      font-size: 28px; border: none;
+      box-shadow: var(--shadow-lg);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      z-index: 200; transition: transform 0.15s, background 0.15s;
+    }
+    .fab:active { transform: scale(0.92); background: var(--primary-dark); }
+
+    /* ===== SCREENS ===== */
+    .screen { display: none; min-height: 100vh; background: var(--gray-100); }
+    .screen.active { display: block; }
+
+    /* ===== DETAIL ===== */
+    .detail-header {
+      background: var(--primary); color: white;
+      padding: 16px;
+      display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .back-btn {
+      background: rgba(255,255,255,0.2); border: none; color: white;
+      width: 36px; height: 36px; border-radius: 50%;
+      font-size: 18px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .detail-header-title { flex: 1; font-size: 17px; font-weight: 700; }
+    .edit-btn {
+      background: rgba(255,255,255,0.2); border: none; color: white;
+      padding: 7px 14px; border-radius: 20px;
+      font-size: 14px; cursor: pointer; font-weight: 600;
+    }
+    .detail-content { padding: 14px; display: flex; flex-direction: column; gap: 12px; padding-bottom: 30px; }
+
+    .detail-hero {
+      background: white; border-radius: var(--radius);
+      padding: 20px; text-align: center; box-shadow: var(--shadow);
+    }
+    .detail-hero-badge {
+      display: inline-block;
+      font-size: 11px; font-weight: 800;
+      padding: 3px 12px; border-radius: 99px;
+      margin-bottom: 8px;
+    }
+    .badge-ester   { background: var(--ester-light);    color: var(--ester-color); }
+    .badge-sulfuric{ background: var(--sulfuric-light);  color: var(--sulfuric-color); }
+    .badge-polymer { background: var(--polymer-light);   color: var(--polymer-color); }
+
+    .detail-hero-name { font-size: 21px; font-weight: 800; color: var(--gray-900); }
+    .detail-hero-sub  { font-size: 13px; color: var(--gray-500); margin-top: 4px; }
+    .detail-allowance {
+      display: inline-block;
+      margin-top: 10px;
+      background: #fef9c3; color: #854d0e;
+      padding: 4px 16px; border-radius: 99px;
+      font-size: 13px; font-weight: 700;
+    }
+
+    .section-card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+    .section-title {
+      font-size: 11px; font-weight: 700; color: var(--primary);
+      text-transform: uppercase; letter-spacing: 1px;
+      padding: 10px 16px 8px;
+      border-bottom: 1px solid var(--gray-100);
+      background: var(--primary-light);
+    }
+    .section-body { padding: 10px 16px; }
+    .info-row {
+      display: flex; padding: 8px 0;
+      border-bottom: 1px solid var(--gray-100); gap: 10px;
+    }
+    .info-row:last-child { border-bottom: none; }
+    .info-label {
+      font-size: 12px; color: var(--gray-500);
+      min-width: 76px; flex-shrink: 0;
+      padding-top: 1px; font-weight: 600;
+    }
+    .info-value {
+      font-size: 14px; color: var(--gray-800);
+      line-height: 1.6; white-space: pre-wrap; word-break: break-all;
+    }
+    .info-value.empty { color: var(--gray-400); font-style: italic; }
+
+    .photo-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 6px; padding: 12px 16px;
+    }
+    .photo-thumb {
+      aspect-ratio: 1; border-radius: 8px;
+      overflow: hidden; background: var(--gray-100); cursor: pointer;
+    }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+
+    .delete-zone { padding: 0 0 4px; }
+    .delete-btn {
+      width: 100%; padding: 14px;
+      border-radius: var(--radius);
+      border: 2px solid var(--danger);
+      background: white; color: var(--danger);
+      font-size: 15px; font-weight: 700; cursor: pointer;
+    }
+
+    /* ===== FORM ===== */
+    .form-header {
+      background: var(--primary); color: white;
+      padding: 16px;
+      display: flex; align-items: center; gap: 12px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .form-header-title { flex: 1; font-size: 17px; font-weight: 700; }
+    .save-btn {
+      background: white; border: none; color: var(--primary);
+      padding: 8px 18px; border-radius: 20px;
+      font-size: 14px; cursor: pointer; font-weight: 700;
+    }
+    .form-content {
+      padding: 14px; display: flex; flex-direction: column;
+      gap: 12px; padding-bottom: 40px;
+    }
+    .form-section {
+      background: white; border-radius: var(--radius);
+      box-shadow: var(--shadow); overflow: hidden;
+    }
+    .form-section-title {
+      font-size: 11px; font-weight: 700; color: var(--primary);
+      text-transform: uppercase; letter-spacing: 1px;
+      padding: 10px 16px;
+      background: var(--primary-light);
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .field {
+      display: flex; flex-direction: column;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .field:last-child { border-bottom: none; }
+    .field-label {
+      font-size: 11px; font-weight: 700; color: var(--gray-500);
+      margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .field-required { color: var(--danger); margin-left: 3px; }
+    .field-input, .field-textarea, .field-select {
+      border: none; outline: none;
+      font-size: 15px; color: var(--gray-800);
+      font-family: inherit; width: 100%; background: transparent;
+    }
+    .field-input::placeholder, .field-textarea::placeholder { color: var(--gray-300); }
+    .field-textarea { resize: none; min-height: 78px; line-height: 1.6; }
+    .field-select { appearance: none; cursor: pointer; padding-right: 20px; }
+
+    /* éæ selector pills */
+    .meigara-pills { display: flex; gap: 8px; padding: 10px 16px; }
+    .meigara-pill {
+      flex: 1; padding: 9px 4px;
+      border-radius: 10px;
+      border: 2px solid var(--gray-200);
+      background: white; cursor: pointer;
+      text-align: center; font-size: 13px; font-weight: 700;
+      color: var(--gray-500); font-family: inherit;
+      transition: all 0.15s;
+    }
+    .meigara-pill.selected-ester   { border-color: var(--ester-color);    background: var(--ester-light);    color: var(--ester-color); }
+    .meigara-pill.selected-sulfuric{ border-color: var(--sulfuric-color);  background: var(--sulfuric-light);  color: var(--sulfuric-color); }
+    .meigara-pill.selected-polymer { border-color: var(--polymer-color);   background: var(--polymer-light);   color: var(--polymer-color); }
+
+    /* å°å selector pills */
+    .region-pills { display: flex; flex-wrap: wrap; gap: 7px; padding: 10px 16px; }
+    .region-pill {
+      padding: 8px 14px;
+      border-radius: 10px;
+      border: 2px solid var(--gray-200);
+      background: white; cursor: pointer;
+      font-size: 13px; font-weight: 700;
+      color: var(--gray-500); font-family: inherit;
+      transition: all 0.15s;
+    }
+    .region-pill.selected {
+      border-color: var(--ester-color);
+      background: var(--ester-light);
+      color: var(--ester-color);
+    }
+
+    /* Photo upload */
+    .photo-upload-area { padding: 12px 16px; }
+    .photo-upload-btn {
+      width: 100%; padding: 13px;
+      border: 2px dashed var(--gray-300);
+      border-radius: 10px; background: var(--gray-50);
+      color: var(--gray-500); font-size: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      font-weight: 600;
+    }
+    .photo-preview-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 6px; margin-top: 10px;
+    }
+    .preview-item { aspect-ratio: 1; border-radius: 8px; overflow: hidden; position: relative; }
+    .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+    .preview-delete {
+      position: absolute; top: 4px; right: 4px;
+      width: 22px; height: 22px;
+      background: rgba(0,0,0,0.6); color: white;
+      border: none; border-radius: 50%; font-size: 12px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ===== LIGHTBOX ===== */
+    .lightbox {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.92); z-index: 1000;
+      align-items: center; justify-content: center; flex-direction: column;
+    }
+    .lightbox.open { display: flex; }
+    .lightbox img { max-width: 95vw; max-height: 80vh; border-radius: 8px; object-fit: contain; }
+    .lightbox-close {
+      position: absolute; top: 16px; right: 16px;
+      background: rgba(255,255,255,0.2); border: none; color: white;
+      width: 40px; height: 40px; border-radius: 50%;
+      font-size: 22px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* ===== TOAST ===== */
+    .toast {
+      position: fixed; bottom: 88px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--gray-800); color: white;
+      padding: 11px 22px; border-radius: 99px;
+      font-size: 14px; font-weight: 600;
+      opacity: 0; transition: opacity 0.3s, transform 0.3s;
+      z-index: 999; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ===== CONFIRM ===== */
+    .overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.5); z-index: 500;
+      align-items: flex-end; justify-content: center;
+    }
+    .overlay.open { display: flex; }
+    .confirm-sheet {
+      background: white; border-radius: 20px 20px 0 0;
+      padding: 24px 20px 40px; width: 100%; max-width: 480px;
+    }
+    .confirm-title { font-size: 17px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+    .confirm-msg   { font-size: 14px; color: var(--gray-500); text-align: center; margin-bottom: 20px; }
+    .confirm-actions { display: flex; gap: 10px; }
+    .confirm-cancel {
+      flex: 1; padding: 14px; border-radius: var(--radius);
+      border: 2px solid var(--gray-200); background: white;
+      font-size: 15px; font-weight: 700; color: var(--gray-600); cursor: pointer;
+    }
+    .confirm-ok {
+      flex: 1; padding: 14px; border-radius: var(--radius);
+      border: none; background: var(--danger);
+      font-size: 15px; font-weight: 700; color: white; cursor: pointer;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- ===== SCREEN: LIST ===== -->
+<div id="screen-list" class="screen active">
+  <div class="app-header">
+    <div class="header-top">
+      <div>
+        <div class="app-title">ð è·å¸ãå®¢åç®¡ç</div>
+        <div class="app-subtitle">ã¿ã³ã¯ã­ã¼ãªã¼ééç®¡çã¢ããª</div>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <span class="search-icon">ð</span>
+      <input class="search-input" id="searchInput" type="text" placeholder="å®¢ååã§æ¤ç´¢..." oninput="filterCustomers()">
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-ester"    onclick="switchTab('ester')">
+        <span class="tab-icon">ð£</span>ã¨ã¹ãã«
+      </button>
+      <button class="tab-btn"        id="tab-sulfuric" onclick="switchTab('sulfuric')">
+        <span class="tab-icon">ð¡</span>ç¡«é¸
+      </button>
+      <button class="tab-btn"        id="tab-polymer"  onclick="switchTab('polymer')">
+        <span class="tab-icon">ðµ</span>ããªãã¼
+      </button>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <div class="customer-count" id="customerCount"></div>
+    <div id="customerListWrap"></div>
+    <div class="empty-state hidden" id="emptyState">
+      <div class="empty-icon">ð­</div>
+      <div class="empty-title" id="emptyTitle">å®¢åãã¾ã ç»é²ããã¦ãã¾ãã</div>
+      <div class="empty-sub">å³ä¸ã®ãï¼ããã¿ã³ããè¿½å ãã¦ãã ãã</div>
+    </div>
+  </div>
+
+  <button class="fab" onclick="openAddForm()">ï¼</button>
+</div>
+
+<!-- ===== SCREEN: DETAIL ===== -->
+<div id="screen-detail" class="screen">
+  <div class="detail-header">
+    <button class="back-btn" onclick="showList()">â</button>
+    <div class="detail-header-title" id="detailHeaderTitle">å®¢åè©³ç´°</div>
+    <button class="edit-btn" onclick="openEditForm()">âï¸ ç·¨é</button>
+  </div>
+  <div class="detail-content" id="detailContent"></div>
+</div>
+
+<!-- ===== SCREEN: FORM ===== -->
+<div id="screen-form" class="screen">
+  <div class="form-header">
+    <button class="back-btn" onclick="closeForm()">â</button>
+    <div class="form-header-title" id="formTitle">å®¢åãè¿½å </div>
+    <button class="save-btn" onclick="saveCustomer()">ä¿å­</button>
+  </div>
+  <div class="form-content">
+
+    <!-- éæ -->
+    <div class="form-section">
+      <div class="form-section-title">â½ éæ<span class="field-required">*</span></div>
+      <div class="meigara-pills">
+        <button class="meigara-pill" id="pill-ester"    onclick="selectMeigara('ester')">ð£ ã¨ã¹ãã«</button>
+        <button class="meigara-pill" id="pill-sulfuric" onclick="selectMeigara('sulfuric')">ð¡ ç¡«é¸</button>
+        <button class="meigara-pill" id="pill-polymer"  onclick="selectMeigara('polymer')">ðµ ããªãã¼</button>
+      </div>
+    </div>
+
+    <!-- åºæ¬æå ± -->
+    <div class="form-section">
+      <div class="form-section-title">ð åºæ¬æå ±</div>
+      <div class="field">
+        <label class="field-label">å®¢åå<span class="field-required">*</span></label>
+        <input class="field-input" id="f-name" type="text" placeholder="ä¾ï¼å±±ç°ç³æ²¹å·¥æ¥­ æ ªå¼ä¼ç¤¾">
+      </div>
+      <div class="field" id="field-region-wrap" style="padding-bottom:0;">
+        <label class="field-label">å°åï¼ã¨ã¹ãã«ã®ã¿ï¼</label>
+        <div class="region-pills" id="regionPills">
+          <button class="region-pill" data-region="è¥¿é¢æ±"   onclick="selectRegion('è¥¿é¢æ±')">è¥¿é¢æ±</button>
+          <button class="region-pill" data-region="æ±é¢æ±"   onclick="selectRegion('æ±é¢æ³')">æ±é¢æ±</button>
+          <button class="region-pill" data-region="åé¸"     onclick="selectRegion('åé¸')">åé¸</button>
+          <button class="region-pill" data-region="ä¸­é¨"     onclick="selectRegion('ä¸­é¨')">ä¸­é¨</button>
+          <button class="region-pill" data-region="è¿ç¿é¢è¥¿" onclick="selectRegion('è¿ç¿é¢è¥¿')">è¿ç¿é¢è¥¿</button>
+          <button class="region-pill" data-region="ä¸­å½åå½" onclick="selectRegion('ä¸­å½åå½')">ä¸­å½åå½</button>
+          <button class="region-pill" data-region="ä¹å·"     onclick="selectRegion('ä¹å·')">ä¹å·</button>
+        </div>
+        <input type="hidden" id="f-region">
+      </div>
+      <div class="field">
+        <label class="field-label">å§æ¥­æé</label>
+        <input class="field-input" id="f-start-time" type="text" placeholder="ä¾ï¼08:00">
+      </div>
+      <div class="field">
+        <label class="field-label">çµæ¥­æé</label>
+        <input class="field-input" id="f-end-time" type="text" placeholder="ä¾ï¼17:00">
+      </div>
+      <div class="field">
+        <label class="field-label">éè¡æå½ï¼åï¼</label>
+        <input class="field-input" id="f-allowance" type="number" inputmode="numeric" placeholder="ä¾ï¼5000">
+      </div>
+    </div>
+
+    <!-- è·å¸ãæå ± -->
+    <div class="form-section">
+      <div class="form-section-title">ð­ è·å¸ãæå ±</div>
+      <div class="field">
+        <label class="field-label">ã¿ã³ã¯ã®å ´æã»ç®å°</label>
+        <textarea class="field-textarea" id="f-tank-location" placeholder="ä¾ï¼æ­£éãå¥ã£ã¦å·¦æãéãå±æ ¹ã®ååº«ã®è£å´&#10;ç®å°ï¼é»è²ããã¤ãããã"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">è·å¸ãå£ã®ä½ç½®ã»æ¥ç¶æ¹æ³</label>
+        <textarea class="field-textarea" id="f-unload-port" placeholder="ä¾ï¼å°ä¸åè¨­ã¿ã³ã¯ã»å£å¾4ã¤ã³ã&#10;ãã«ãã¯å³åãã§éã"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">é§è»å ´æã»ã¢ã¯ã»ã¹</label>
+        <textarea class="field-textarea" id="f-parking" placeholder="ä¾ï¼æ­£éããå¥ã£ã¦ããå³ã«é§è»ã¹ãã¼ã¹&#10;è»ä¸¡å¶éï¼å¨é·12mä»¥å"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">â ï¸ æ³¨æäºé </label>
+        <textarea class="field-textarea" id="f-caution" placeholder="ä¾ï¼ç«æ°å³ç¦ã¨ãªã¢ãã&#10;ä½æ¥­åã«å¿ãæå½èã«é£çµ¡"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label">è·å¸ãæé </label>
+        <textarea class="field-textarea" id="f-procedure" placeholder="ä¾ï¼â äºåæã§åä» â¡ã¿ã³ã¯ç¢ºèª â¢æ¥ç¶ â£è·å¸ã â¤ãµã¤ã³åé "></textarea>
+      </div>
+    </div>
+
+    <!-- ã¡ã¢ -->
+    <div class="form-section">
+      <div class="form-section-title">ð ã¡ã¢ã»ç¹è¨äºé </div>
+      <div class="field">
+        <label class="field-label">èªç±ã¡ã¢</label>
+        <textarea class="field-textarea" id="f-memo" style="min-height:90px" placeholder="ä¾ï¼éµã®ä¿ç®¡å ´æãå¥å ´è¨¼ã®æç¡ãªã©..."></textarea>
+      </div>
+    </div>
+
+    <!-- åç -->
+    <div class="form-section">
+      <div class="form-section-title">ð· åçï¼ã¿ã³ã¯ã»è·å¸ãå£ãªã©ï¼</div>
+      <div class="photo-upload-area">
+        <button class="photo-upload-btn" onclick="document.getElementById('photoInput').click()">
+          <span>ð·</span> åçãè¿½å ï¼ã«ã¡ã©ã»ã¢ã«ãã ï¼
+        </button>
+        <input type="file" id="photoInput" accept="image/*" multiple capture="environment" class="hidden" onchange="handlePhotoSelect(event)">
+        <div class="photo-preview-grid" id="photoPreviewGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close">â</button>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<!-- CONFIRM DELETE -->
+<div class="overlay" id="confirmOverlay">
+  <div class="confirm-sheet">
+    <div class="confirm-title">ðï¸ åé¤ãã¾ããï¼</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-actions">
+      <button class="confirm-cancel" onclick="closeConfirm()">ã­ã£ã³ã»ã«</button>
+      <button class="confirm-ok" id="confirmOkBtn">åé¤ãã</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== STATE =====
+let customers = [];
+let currentId = null;
+let currentTab = 'ester';   // 'ester' | 'sulfuric' | 'polymer'
+let currentMeigara = 'ester';
+let editingPhotos = [];
+let currentDeleteId = null;
+
+// ===== STORAGE =====
+function loadData() {
+  try {
+    const raw = localStorage.getItem('tanker_customers_v2');
+    if (raw) customers = JSON.parse(raw);
+  } catch(e) { customers = []; }
+}
+function saveData() {
+  localStorage.setItem('tanker_customers_v2', JSON.stringify(customers));
+}
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+// ===== TAB =====
+const MEIGARA_LABELS = { ester: 'ã¨ã¹ãã«', sulfuric: 'ç¡«é¸', polymer: 'ããªãã¼' };
+const MEIGARA_BADGE  = { ester: 'badge-ester', sulfuric: 'badge-sulfuric', polymer: 'badge-polymer' };
+const MEIGARA_CARD   = { ester: 'meigara-ester', sulfuric: 'meigara-sulfuric', polymer: 'meigara-polymer' };
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('searchInput').value = '';
+  renderList(getFiltered(''));
+}
+
+// ===== FILTER =====
+function filterCustomers() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  renderList(getFiltered(q));
+}
+
+function getFiltered(q) {
+  return customers.filter(c =>
+    c.meigara === currentTab &&
+    (!q || (c.name || '').toLowerCase().includes(q))
+  );
+}
+
+// ===== RENDER LIST =====
+function renderList(list) {
+  const wrap   = document.getElementById('customerListWrap');
+  const empty  = document.getElementById('emptyState');
+  const count  = document.getElementById('customerCount');
+  wrap.innerHTML = '';
+
+  if (list.length === 0) {
+    empty.classList.remove('hidden');
+    document.getElementById('emptyTitle').textContent =
+      `${MEIGARA_LABELS[currentTab]}ã®å®¢åãã¾ã ç»é²ããã¦ãã¾ãã`;
+    count.textContent = '';
+    return;
+  }
+  empty.classList.add('hidden');
+  count.textContent = `${list.length}ä»¶`;
+
+  if (currentTab === 'ester' || currentTab === 'polymer') {
+    renderGrouped(wrap, list);
+  } else {
+    const ul = document.createElement('div');
+    ul.className = 'customer-list';
+    list.forEach(c => ul.appendChild(makeCard(c)));
+    wrap.appendChild(ul);
+  }
+}
+
+function renderGrouped(wrap, list) {
+  // åºå®ã®å°åé ï¼REGIONSå®ç¾©é ã§ã½ã¼ããããä»¥å¤ã»æªè¨­å®ã¯æ«å°¾ï¼
+  const groups = {};
+  list.forEach(c => {
+    const key = (c.region && c.region.trim()) ? c.region.trim() : 'å°åæªè¨­å®';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(c);
+  });
+  const sortedKeys = Object.keys(groups).sort((a, b) => {
+    const ai = REGIONS.indexOf(a);
+    const bi = REGIONS.indexOf(b);
+    if (a === 'å°åæªè¨­å®') return 1;
+    if (b === 'å°åæªè¨­å®') return -1;
+    if (ai === -1 && bi === -1) return a.localeCompare(b, 'ja');
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
+  const headerColor = currentTab === 'polymer' ? 'var(--polymer-color)' : 'var(--ester-color)';
+  sortedKeys.forEach(key => {
+    const group = document.createElement('div');
+    group.className = 'region-group';
+    const header = document.createElement('div');
+    header.className = 'region-header';
+    header.style.color = headerColor;
+    header.textContent = `ð ${key}`;
+    group.appendChild(header);
+    const ul = document.createElement('div');
+    ul.className = 'customer-list';
+    groups[key].forEach(c => ul.appendChild(makeCard(c)));
+    group.appendChild(ul);
+    wrap.appendChild(group);
+  });
+}
+
+function makeCard(c) {
+  const card = document.createElement('div');
+  card.className = `customer-card ${MEIGARA_CARD[c.meigara] || ''}`;
+  card.onclick = () => showDetail(c.id);
+
+  const avatarHtml = (c.photos && c.photos.length > 0)
+    ? `<div class="card-avatar"><img src="${c.photos[0]}" alt=""></div>`
+    : `<div class="card-avatar">ð­</div>`;
+
+  const timeStr = (c.startTime && c.endTime)
+    ? `ð ${c.startTime}ã${c.endTime}`
+    : (c.startTime ? `ð å§æ¥­ ${c.startTime}` : '');
+  const allowStr = c.allowance
+    ? `ð´ Â¥${Number(c.allowance).toLocaleString()}`
+    : '';
+  const sub = [timeStr, allowStr].filter(Boolean).join('ã') || 'æéã»æå½ æªç»é²';
+
+  let tags = '';
+  if (c.tankLocation) tags += `<span class="tag tag-tank">â½ã¿ã³ã¯æå ±</span>`;
+  if (c.memo)         tags += `<span class="tag tag-note">ðã¡ã¢</span>`;
+  if (c.photos && c.photos.length > 0) tags += `<span class="tag tag-photo">ð·${c.photos.length}æ</span>`;
+
+  card.innerHTML = `
+    ${avatarHtml}
+    <div class="card-body">
+      <div class="card-name">${esc(c.name)}</div>
+      <div class="card-sub">${sub}</div>
+      ${tags ? `<div class="card-tags">${tags}</div>` : ''}
+    </div>
+    <div class="card-arrow">âº</div>
+  `;
+  return card;
+}
+
+// ===== DETAIL =====
+function showDetail(id) {
+  currentId = id;
+  const c = customers.find(x => x.id === id);
+  if (!c) return;
+
+  document.getElementById('detailHeaderTitle').textContent = c.name;
+  const content = document.getElementById('detailContent');
+  content.innerHTML = '';
+
+  // Hero
+  const hero = document.createElement('div');
+  hero.className = 'detail-hero';
+  const badgeClass = MEIGARA_BADGE[c.meigara] || 'badge-ester';
+  const mLabel = MEIGARA_LABELS[c.meigara] || c.meigara;
+  const timeStr = (c.startTime && c.endTime)
+    ? `ð ${c.startTime} ã ${c.endTime}`
+    : (c.startTime ? `ð å§æ¥­ ${c.startTime}` : '');
+  const regionStr = (c.meigara === 'ester' && c.region) ? `ð ${c.region}` : '';
+  const sub = [regionStr, timeStr].filter(Boolean).join('ã');
+  const allowHtml = c.allowance
+    ? `<div class="detail-allowance">ð´ éè¡æå½ Â¥${Number(c.allowance).toLocaleString()}</div>`
+    : '';
+  hero.innerHTML = `
+    <div class="detail-hero-badge ${badgeClass}">${mLabel}</div>
+    <div class="detail-hero-name">${esc(c.name)}</div>
+    <div class="detail-hero-sub">${esc(sub)}</div>
+    ${allowHtml}
+  `;
+  content.appendChild(hero);
+
+  // åºæ¬æå ±
+  const basicRows = [
+    ['å§æ¥­æé', c.startTime],
+    ['çµæ¥­æé', c.endTime],
+    ['éè¡æå½',  c.allowance ? `Â¥${Number(c.allowance).toLocaleString()}` : ''],
+  ];
+  if (c.meigara === 'ester') basicRows.unshift(['å°å', c.region]);
+  content.appendChild(buildSection('ð åºæ¬æå ±', basicRows));
+
+  // è·å¸ãæå ±
+  content.appendChild(buildSection('ð­ è·å¸ãæå ±', [
+    ['ã¿ã³ã¯å ´æ', c.tankLocation],
+    ['è·å¸ãå£',   c.unloadPort],
+    ['é§è»å ´æ',   c.parking],
+    ['â ï¸æ³¨æäºé ', c.caution],
+    ['æé ',       c.procedure],
+  ]));
+
+  // ã¡ã¢
+  if (c.memo) {
+    content.appendChild(buildSection('ð ã¡ã¢ã»ç¹è¨äºé ', [['', c.memo]]));
+  }
+
+  // åç
+  if (c.photos && c.photos.length > 0) {
+    const ps = document.createElement('div');
+    ps.className = 'section-card';
+    ps.innerHTML = `<div class="section-title">ð· åçï¼${c.photos.length}æï¼</div>`;
+    const grid = document.createElement('div');
+    grid.className = 'photo-grid';
+    c.photos.forEach((src, i) => {
+      const thumb = document.createElement('div');
+      thumb.className = 'photo-thumb';
+      thumb.innerHTML = `<img src="${src}" alt="åç${i+1}">`;
+      thumb.onclick = () => openLightbox(src);
+      grid.appendChild(thumb);
+    });
+    ps.appendChild(grid);
+    content.appendChild(ps);
+  }
+
+  // åé¤ãã¿ã³
+  const dz = document.createElement('div');
+  dz.className = 'delete-zone';
+  dz.innerHTML = `<button class="delete-btn" onclick="confirmDelete('${id}')">ðï¸ ãã®å®¢åãåé¤ãã</button>`;
+  content.appendChild(dz);
+
+  showScreen('screen-detail');
+}
+
+function buildSection(title, rows) {
+  const sec = document.createElement('div');
+  sec.className = 'section-card';
+  const t = document.createElement('div');
+  t.className = 'section-title';
+  t.textContent = title;
+  const body = document.createElement('div');
+  body.className = 'section-body';
+  rows.forEach(([label, val]) => {
+    const row = document.createElement('div');
+    row.className = 'info-row';
+    const isEmpty = !val || String(val).trim() === '';
+    row.innerHTML = `
+      <div class="info-label">${label}</div>
+      <div class="info-value${isEmpty ? ' empty' : ''}">${isEmpty ? 'æªç»é²' : esc(String(val))}</div>
+    `;
+    body.appendChild(row);
+  });
+  sec.appendChild(t);
+  sec.appendChild(body);
+  return sec;
+}
+
+// ===== FORM =====
+const TEXT_FIELDS = ['name','start-time','end-time','allowance','tank-location','unload-port','parking','caution','procedure','memo'];
+const REGIONS = ['è¥¿é¢æ±','æ±é¢æ±','åé¸','ä¸­é¨','è¿ç¿é¢è¥¿','ä¸­å½åå½','ä¹å·'];
+
+function openAddForm() {
+  currentId = null;
+  editingPhotos = [];
+  document.getElementById('formTitle').textContent = 'å®¢åãè¿½å ';
+  TEXT_FIELDS.forEach(id => { document.getElementById('f-' + id).value = ''; });
+  selectRegion(''); // å°åãªã»ãã
+  selectMeigara(currentTab); // ããã©ã«ãã¯ç¾å¨è¡¨ç¤ºä¸­ã®ã¿ã
+  renderPhotoPreview();
+  showScreen('screen-form');
+}
+
+function openEditForm() {
+  const c = customers.find(x => x.id === currentId);
+  if (!c) return;
+  editingPhotos = c.photos ? [...c.photos] : [];
+  document.getElementById('formTitle').textContent = 'å®¢åãç·¨é';
+  document.getElementById('f-name').value        = c.name       || '';
+  selectRegion(c.region || '');
+  document.getElementById('f-start-time').value  = c.startTime  || '';
+  document.getElementById('f-end-time').value    = c.endTime    || '';
+  document.getElementById('f-allowance').value   = c.allowance  || '';
+  document.getElementById('f-tank-location').value = c.tankLocation || '';
+  document.getElementById('f-unload-port').value   = c.unloadPort  || '';
+  document.getElementById('f-parking').value     = c.parking    || '';
+  document.getElementById('f-caution').value     = c.caution    || '';
+  document.getElementById('f-procedure').value   = c.procedure  || '';
+  document.getElementById('f-memo').value        = c.memo       || '';
+  selectMeigara(c.meigara || 'ester');
+  renderPhotoPreview();
+  showScreen('screen-form');
+}
+
+function selectMeigara(m) {
+  currentMeigara = m;
+  ['ester','sulfuric','polymer'].forEach(key => {
+    const pill = document.getElementById('pill-' + key);
+    pill.className = 'meigara-pill' + (key === m ? ` selected-${key}` : '');
+  });
+  // å°åãã£ã¼ã«ãã¯ã¨ã¹ãã«ã»ããªãã¼ã§è¡¨ç¤º
+  document.getElementById('field-region-wrap').style.display = (m === 'ester' || m === 'polymer') ? '' : 'none';
+}
+
+function selectRegion(r) {
+  document.getElementById('f-region').value = r;
+  document.querySelectorAll('#regionPills .region-pill').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.region === r);
+  });
+}
+
+function closeForm() {
+  if (currentId) showDetail(currentId);
+  else showList();
+}
+
+function saveCustomer() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) {
+    showToast('â ï¸ å®¢ååãå¥åãã¦ãã ãã');
+    document.getElementById('f-name').focus();
+    return;
+  }
+  if (!currentMeigara) {
+    showToast('â ï¸ éæãé¸æãã¦ãã ãã');
+    return;
+  }
+
+  const data = {
+    meigara:      currentMeigara,
+    name,
+    region:       document.getElementById('f-region').value.trim(),
+    startTime:    document.getElementById('f-start-time').value.trim(),
+    endTime:      document.getElementById('f-end-time').value.trim(),
+    allowance:    document.getElementById('f-allowance').value.trim(),
+    tankLocation: document.getElementById('f-tank-location').value.trim(),
+    unloadPort:   document.getElementById('f-unload-port').value.trim(),
+    parking:      document.getElementById('f-parking').value.trim(),
+    caution:      document.getElementById('f-caution').value.trim(),
+    procedure:    document.getElementById('f-procedure').value.trim(),
+    memo:         document.getElementById('f-memo').value.trim(),
+    photos:       [...editingPhotos],
+    updatedAt:    new Date().toISOString(),
+  };
+
+  if (currentId) {
+    const idx = customers.findIndex(x => x.id === currentId);
+    if (idx >= 0) {
+      data.id = currentId;
+      data.createdAt = customers[idx].createdAt;
+      customers[idx] = data;
+    }
+  } else {
+    data.id = generateId();
+    data.createdAt = new Date().toISOString();
+    customers.unshift(data);
+    currentId = data.id;
+  }
+
+  saveData();
+  // ä¿å­å¾ã¯ç»é²ããäæã®ã¿ãã«åãæ¿ã
+  currentTab = data.meigara;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + currentTab).classList.add('active');
+  showToast('â ä¿å­ãã¾ãã');
+  showDetail(currentId);
+}
+
+// ===== PHOTOS =====
+function handlePhotoSelect(event) {
+  const files = Array.from(event.target.files);
+  Promise.all(files.map(f => new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = e => res(e.target.result);
+    r.onerror = rej;
+    r.readAsDataURL(f);
+  }))).then(results => {
+    editingPhotos.push(...results);
+    renderPhotoPreview();
+  });
+  event.target.value = '';
+}
+function removePhoto(idx) {
+  editingPhotos.splice(idx, 1);
+  renderPhotoPreview();
+}
+function renderPhotoPreview() {
+  const grid = document.getElementById('photoPreviewGrid');
+  grid.innerHTML = '';
+  editingPhotos.forEach((src, i) => {
+    const item = document.createElement('div');
+    item.className = 'preview-item';
+    item.innerHTML = `<img src="${src}" alt="åç${i+1}"><button class="preview-delete" onclick="removePhoto(${i})">â</button>`;
+    grid.appendChild(item);
+  });
+}
+
+// ===== LIGHTBOX =====
+function openLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+// ===== DELETE =====
+function confirmDelete(id) {
+  currentDeleteId = id;
+  const c = customers.find(x => x.id === id);
+  document.getElementById('confirmMsg').textContent = `ã${c ? c.name : ''}ããåé¤ãã¾ããåã«æ»ãã¾ããã`;
+  document.getElementById('confirmOkBtn').onclick = executeDelete;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+}
+function executeDelete() {
+  customers = customers.filter(x => x.id !== currentDeleteId);
+  saveData();
+  closeConfirm();
+  showToast('ðï¸ åé¤ãã¾ãã');
+  showList();
+}
+
+// ===== NAVIGATION =====
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+function showList() {
+  renderList(getFiltered(''));
+  document.getElementById('searchInput').value = '';
+  showScreen('screen-list');
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ===== ESCAPE =====
+function esc(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/\n/g,'<br>');
+}
+
+// ===== INIT =====
+loadData();
+selectMeigara('ester');
+renderList(getFiltered(''));
+</script>
+</body>
+</html>
