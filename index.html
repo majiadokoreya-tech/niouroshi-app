@@ -9,12 +9,10 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
-
 .nav-header{background:#fff;border-bottom:1px solid #e5e5e0;padding:14px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100}
 .back-btn{font-size:15px;color:#007aff;cursor:pointer;white-space:nowrap;padding:4px 0}
 .screen-title{font-size:17px;font-weight:700;flex:1}
 .edit-link{font-size:15px;color:#007aff;cursor:pointer;white-space:nowrap}
-
 .card-list{padding:12px}
 .row-card{background:#fff;border:1px solid #e5e5e0;border-radius:12px;padding:15px 16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:background 0.1s}
 .row-card:active{background:#f0f0ec}
@@ -25,10 +23,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;ba
 .add-card{background:#fff;border:1px dashed #c8c8c4;border-radius:12px;padding:13px 16px;margin-bottom:10px;cursor:pointer;display:flex;align-items:center;gap:12px;color:#007aff;font-size:14px;transition:background 0.1s}
 .add-card:active{background:#f0f5ff}
 .add-card-icon{width:24px;height:24px;border-radius:50%;background:#e8f0fe;display:flex;align-items:center;justify-content:center;font-size:16px;color:#007aff;flex-shrink:0;line-height:1}
-
 #view-top .nav-header{padding:16px}
 #view-top .nav-header .screen-title{font-size:19px}
-
 .section{background:#fff;border-top:1px solid #e5e5e0;border-bottom:1px solid #e5e5e0;padding:14px 16px;margin-bottom:8px}
 .section-label{font-size:11px;font-weight:700;color:#888;letter-spacing:0.06em;margin-bottom:10px}
 .info-row{display:flex;gap:8px;margin-bottom:7px;font-size:14px;align-items:flex-start}
@@ -37,13 +33,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;ba
 .note-box{background:#f8f8f5;border-radius:8px;padding:12px;font-size:14px;color:#1a1a1a;line-height:1.6;white-space:pre-wrap}
 .del-btn{display:block;width:calc(100% - 32px);margin:4px 16px 16px;padding:13px;background:#fff;border:1px solid #e5e5e0;border-radius:12px;font-size:14px;color:#e53935;cursor:pointer;text-align:center}
 .del-btn:active{background:#fff0f0}
-
 .form-section{background:#fff;border-top:1px solid #e5e5e0;border-bottom:1px solid #e5e5e0;padding:14px 16px;margin-bottom:8px}
 .form-label{font-size:12px;color:#888;margin-bottom:6px}
 .form-hint{font-size:12px;color:#bbb;margin-top:5px}
 .form-input{width:100%;padding:10px 12px;border:1px solid #e0e0dc;border-radius:8px;font-size:15px;color:#1a1a1a;background:#fff;outline:none;-webkit-appearance:none}
 .form-input:focus{border-color:#007aff;box-shadow:0 0 0 3px rgba(0,122,255,0.12)}
-.form-textarea{width:100%;padding:10px 12px;border:1px solid #e0e0dc;border-radius:8px;font-size:15px;color:#1a1a1a;background:#fff;outline:none;resize:vertical;min-height:100px;-webkit-appearance:none;font-family:inherit}
+.form-textarea{width:100%;padding:10px 12px;border:1px solid #e0e0dc;border-radius:8px;font-size:15px;color:#1a1a1a;background:#fff;outline:none;resize:vertical;min-height:180px;-webkit-appearance:none;font-family:inherit}
 .form-textarea:focus{border-color:#007aff;box-shadow:0 0 0 3px rgba(0,122,255,0.12)}
 .form-select{width:100%;padding:10px 12px;border:1px solid #e0e0dc;border-radius:8px;font-size:15px;color:#1a1a1a;background:#fff;outline:none;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center}
 .form-select:focus{border-color:#007aff}
@@ -53,12 +48,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;ba
 .time-labels span{flex:1;text-align:center;font-size:12px;color:#bbb}
 .save-btn{display:block;width:calc(100% - 32px);margin:0 16px;padding:14px;background:#1a1a1a;border:none;border-radius:12px;font-size:15px;font-weight:600;color:#fff;cursor:pointer}
 .save-btn:active{opacity:0.8}
-
 .backup-bar{padding:12px 16px;display:flex;gap:8px}
 .backup-btn{flex:1;padding:11px;background:#fff;border:1px solid #e0e0dc;border-radius:10px;font-size:13px;color:#555;cursor:pointer;text-align:center}
 .backup-btn:active{background:#f5f5f0}
 input[type=file]{display:none}
 .empty-hint{text-align:center;padding:24px 16px;color:#ccc;font-size:13px}
+.modal-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.45);z-index:200;align-items:flex-end}
+.modal-overlay.open{display:flex}
+.modal-sheet{background:#fff;border-radius:16px 16px 0 0;width:100%;max-height:80vh;display:flex;flex-direction:column}
+.modal-header{padding:14px 16px;border-bottom:1px solid #e5e5e0;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.modal-title{font-size:16px;font-weight:700;flex:1}
+.modal-close{font-size:15px;color:#007aff;cursor:pointer}
+.modal-search{padding:10px 12px;border-bottom:1px solid #e5e5e0;flex-shrink:0}
+.modal-search input{width:100%;padding:8px 12px;border:1px solid #e0e0dc;border-radius:8px;font-size:15px;outline:none;background:#f8f8f5}
+.modal-list{overflow-y:auto;flex:1}
+.modal-item{padding:13px 16px;border-bottom:1px solid #f0f0ec;cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.modal-item:active{background:#f5f5f0}
+.modal-item-name{font-size:14px;font-weight:500;color:#1a1a1a}
+.modal-item-sub{font-size:12px;color:#999;margin-top:2px}
+.modal-item-price{font-size:14px;font-weight:600;color:#e53935;white-space:nowrap;margin-left:12px}
+.rate-select-btn{width:100%;padding:10px 12px;border:1px solid #007aff;border-radius:8px;font-size:14px;color:#007aff;background:#fff;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.rate-select-btn:active{background:#f0f5ff}
+.rate-select-btn span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 </style>
 </head>
 <body>
@@ -83,7 +94,7 @@ input[type=file]{display:none}
 
 <div id="view-dest" style="display:none;padding-bottom:80px">
   <div class="nav-header">
-    <span class="back-btn" id="dest-back-btn" onclick="backFromDest()">＜ 戻る</span>
+    <span class="back-btn" onclick="backFromDest()">＜ 戻る</span>
     <span class="screen-title" id="dest-title"></span>
   </div>
   <div class="card-list" id="dest-list"></div>
@@ -104,6 +115,14 @@ input[type=file]{display:none}
     <span class="screen-title" id="form-title">客先を追加</span>
   </div>
   <div style="margin-top:8px">
+    <div class="form-section">
+      <div class="form-label">料金表から選択（任意）</div>
+      <button class="rate-select-btn" onclick="openRateModal()">
+        <span id="rate-select-label">料金表から客先を選ぶ</span>
+        <span style="color:#ccc;font-size:18px;flex-shrink:0">›</span>
+      </button>
+      <div class="form-hint">選択すると客先名・時間・手当が自動入力されます</div>
+    </div>
     <div class="form-section">
       <div class="form-label">客先名</div>
       <input class="form-input" id="f-name" type="text" placeholder="例：〇〇化学工業">
@@ -131,19 +150,195 @@ input[type=file]{display:none}
   </div>
 </div>
 
+<div id="rate-modal" style="display:none" class="modal-overlay" onclick="closeRateModalBg(event)">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title" id="rate-modal-title">料金表から選択</span>
+      <span class="modal-close" onclick="closeRateModal()">閉じる</span>
+    </div>
+    <div class="modal-search">
+      <input type="text" id="rate-search" placeholder="客先名で絞り込み" oninput="renderRateList()" autocomplete="off">
+    </div>
+    <div class="modal-list" id="rate-list"></div>
+  </div>
+</div>
+
 <script>
 const PRODUCTS=['エステル','硫酸','ポリマー'];
 const AREAS=['西関東','東関東','中部','近畿関西','北陸','中国四国','九州'];
 const HAS_AREA=[true,false,true];
 
+const RATE_DATA={
+  ester:[
+    {name:'BASFジャパン㈱ 磯原',start:'13:00',end:'20:30',allowance:23000},
+    {name:'CHEMIPAZ㈱ 静岡',start:'18:30',end:'15:00',allowance:9800},
+    {name:'CHEMIPAZ㈱ 播磨',start:'17:30',end:'16:00',allowance:13200},
+    {name:'CHEMIPAZ㈱ 龍ケ崎',start:'14:30',end:'19:30',allowance:21400},
+    {name:'DIC㈱ 堺',start:'19:00',end:'15:00',allowance:8200},
+    {name:'DIC㈱ 千葉',start:'15:00',end:'18:30',allowance:18600},
+    {name:'DIC㈱ 北陸',start:'18:00',end:'15:30',allowance:11600},
+    {name:'JSR㈱ 鹿島',start:'14:00',end:'20:00',allowance:22200},
+    {name:'KJケミカルズ㈱ 八代',start:'10:00',end:'2:00',allowance:36600},
+    {name:'MTアクアポリマー㈱ 茂原',start:'14:30',end:'19:30',allowance:21400},
+    {name:'NUC 川崎',start:'16:30',end:'17:00',allowance:16400},
+    {name:'アイカ工業㈱ 丹波',start:'17:30',end:'16:00',allowance:13200},
+    {name:'旭化成㈱ 川崎',start:'16:30',end:'17:00',allowance:16400},
+    {name:'旭化成㈱ 川崎（夜）',start:'16:30',end:'17:00',allowance:16400},
+    {name:'旭化成㈱ 千葉',start:'14:30',end:'18:00',allowance:18000},
+    {name:'旭化成㈱ 水島',start:'16:30',end:'17:30',allowance:17200},
+    {name:'旭化成㈱ 和歌山',start:'17:30',end:'16:00',allowance:13200},
+    {name:'旭硝子㈱ 千葉',start:'15:00',end:'19:00',allowance:19400},
+    {name:'荒川化学工業㈱ 水島',start:'16:30',end:'17:00',allowance:16400},
+    {name:'宇都宮化工㈱ 宇都宮',start:'13:30',end:'20:30',allowance:22800},
+    {name:'大分キャノンマテリアル㈱ 大分（2マン）',start:'10:30',end:'1:30',allowance:34200},
+    {name:'大分ケミカル㈱（2マン）',start:'10:30',end:'1:30',allowance:34400},
+    {name:'大阪有機化学工業㈱ 大阪',start:'19:00',end:'14:30',allowance:7400},
+    {name:'大阪有機化学工業㈱ 金沢',start:'18:00',end:'15:30',allowance:11600},
+    {name:'大塚アグリテクノ㈱ 鳴門',start:'16:30',end:'17:30',allowance:17200},
+    {name:'花王㈱ 鹿島',start:'14:00',end:'19:30',allowance:21400},
+    {name:'花王㈱ 和歌山',start:'18:00',end:'15:30',allowance:11600},
+    {name:'カネカ 高砂',start:'17:30',end:'16:30',allowance:14000},
+    {name:'関西ペイント㈱ 鹿沼',start:'14:00',end:'20:00',allowance:22200},
+    {name:'関西ペイント㈱ 平塚',start:'17:00',end:'16:30',allowance:14600},
+    {name:'北日本ディック㈱（2マン）',start:'12:30',end:'23:00',allowance:28400},
+    {name:'キャノン㈱ 岩間',start:'14:30',end:'19:30',allowance:21400},
+    {name:'キャノン㈱ 取手',start:'15:00',end:'19:00',allowance:20600},
+    {name:'倉敷紡績㈱ 徳島工場',start:'16:30',end:'16:30',allowance:17200},
+    {name:'倉本産業㈱',start:'15:00',end:'18:30',allowance:18800},
+    {name:'クラレ 新潟',start:'12:00',end:'20:30',allowance:23000},
+    {name:'高圧ガス工業㈱ 佐倉',start:'15:00',end:'18:30',allowance:18800},
+    {name:'高圧ガス工業㈱ 竜野',start:'17:00',end:'16:30',allowance:14800},
+    {name:'互応化学工業㈱ 福井',start:'18:30',end:'15:30',allowance:10800},
+    {name:'コニカミノルタサプライズ',start:'15:30',end:'16:00',allowance:14800},
+    {name:'コニカミノルタサプライズ 辰野（BA）',start:'16:30',end:'15:00',allowance:13200},
+    {name:'コニカミノルタサプライズ 辰野（HA）',start:'18:30',end:'15:00',allowance:9200},
+    {name:'サイデン化学㈱ 浦和',start:'16:00',end:'17:30',allowance:17200},
+    {name:'サイデン化学㈱ 東京',start:'16:00',end:'17:30',allowance:17200},
+    {name:'信越化学工業㈱ 直江津',start:'14:30',end:'18:00',allowance:18000},
+    {name:'新中村化学工業㈱ 福井',start:'18:30',end:'15:30',allowance:10600},
+    {name:'新中村化学工業㈱ 本社',start:'18:30',end:'15:30',allowance:10800},
+    {name:'住友化学㈱ 愛媛',start:'14:30',end:'19:00',allowance:20600},
+    {name:'住友化学㈱ 千葉',start:'14:30',end:'18:00',allowance:18000},
+    {name:'綜研化学㈱ 狭山',start:'16:30',end:'17:30',allowance:17200},
+    {name:'大成ファインケミカル㈱',start:'14:00',end:'19:30',allowance:21400},
+    {name:'大成ファインケミカル㈱ 東京',start:'15:30',end:'18:30',allowance:19000},
+    {name:'ダイセル新井ケミカル㈱（HA）',start:'16:30',end:'17:30',allowance:17200},
+    {name:'ダイセル新井ケミカル㈱（HA他）',start:'14:30',end:'17:30',allowance:17200},
+    {name:'大同化成工業㈱',start:'15:30',end:'19:00',allowance:19600},
+    {name:'大同化成工業㈱ 福井',start:'18:30',end:'15:30',allowance:10600},
+    {name:'帝人㈱三島事業所',start:'18:30',end:'15:30',allowance:10800},
+    {name:'デクセリアルズ㈱ 鹿沼第二',start:'14:00',end:'20:00',allowance:22200},
+    {name:'デンカ㈱ 千葉',start:'15:00',end:'19:00',allowance:19400},
+    {name:'東亜合成㈱ 坂出',start:'16:00',end:'17:30',allowance:17200},
+    {name:'東亜合成㈱ 高岡',start:'17:00',end:'15:30',allowance:13200},
+    {name:'東亜合成㈱ 高岡（冬）',start:'17:00',end:'16:30',allowance:14800},
+    {name:'東亜合成㈱ 広野',start:'12:30',end:'21:30',allowance:24600},
+    {name:'東亜合成㈱ 広野（メタ引取あり）',start:'12:30',end:'22:30',allowance:26400},
+    {name:'東亜合成㈱ 広野（メタ引取あり）セミトレ',start:'12:30',end:'23:30',allowance:28400},
+    {name:'トウベ製造 倉敷',start:'16:30',end:'17:30',allowance:17000},
+    {name:'東レ・ファインケミカル㈱ 千葉',start:'15:00',end:'19:00',allowance:20400},
+    {name:'トーヨーケム㈱ 川越',start:'16:00',end:'17:30',allowance:17200},
+    {name:'トーヨーケム㈱ 西神',start:'18:00',end:'16:00',allowance:12400},
+    {name:'日信化学工業㈱ 武生',start:'19:30',end:'14:30',allowance:6600},
+    {name:'日東シンコー㈱ 丸岡',start:'19:00',end:'14:30',allowance:7400},
+    {name:'日東電工㈱ 尾道',start:'15:30',end:'18:00',allowance:18000},
+    {name:'日東電工㈱ 関東',start:'15:00',end:'19:00',allowance:19600},
+    {name:'日東電工㈱ 東北（2マン）',start:'11:00',end:'0:30',allowance:31400},
+    {name:'日本エイアンドエル㈱ 愛媛',start:'14:30',end:'19:00',allowance:20600},
+    {name:'日本エクスラン工業㈱ 西大寺',start:'17:00',end:'17:00',allowance:15600},
+    {name:'日本カーバイド工業㈱ 魚津（HA）',start:'17:30',end:'16:00',allowance:13200},
+    {name:'日本カーバイド工業㈱ 魚津（HA他）',start:'16:30',end:'16:00',allowance:14800},
+    {name:'日本カーバイド工業㈱ 魚津（冬）',start:'16:30',end:'17:00',allowance:16400},
+    {name:'日本カーバイド工業㈱ 早月',start:'17:30',end:'16:00',allowance:13200},
+    {name:'日本カーバイド工業㈱ 早月（冬）',start:'16:30',end:'17:00',allowance:16400},
+    {name:'日本化薬㈱ 福山',start:'16:00',end:'18:00',allowance:18000},
+    {name:'日本触媒 川崎',start:'16:30',end:'17:30',allowance:17200},
+    {name:'日本製紙㈱ 岩国',start:'14:00',end:'20:00',allowance:22200},
+    {name:'日本ゼオン徳山',start:'12:30',end:'21:30',allowance:24600},
+    {name:'日本ゼオン㈱ 川崎',start:'16:30',end:'17:00',allowance:16400},
+    {name:'日本乳化剤㈱ 川崎',start:'16:30',end:'17:00',allowance:16400},
+    {name:'日本ペイント㈱ 岡山',start:'17:30',end:'16:30',allowance:14000},
+    {name:'日本ペイント㈱ 千葉',start:'14:30',end:'19:00',allowance:20600},
+    {name:'日本ペイント㈱ 栃木',start:'13:30',end:'20:30',allowance:22800},
+    {name:'根上工業㈱',start:'18:30',end:'15:30',allowance:10800},
+    {name:'ハイモ㈱ 神奈川',start:'17:00',end:'16:30',allowance:14600},
+    {name:'ハイモ㈱ 山口',start:'13:00',end:'21:00',allowance:23800},
+    {name:'ハニー化成',start:'18:30',end:'15:30',allowance:10800},
+    {name:'日立化成㈱ 鹿島',start:'14:00',end:'20:00',allowance:22200},
+    {name:'日立化成㈱ 山崎',start:'13:30',end:'20:00',allowance:22200},
+    {name:'日油㈱ 尼崎',start:'18:30',end:'15:00',allowance:10000},
+    {name:'保土谷ロジスティクス㈱ 郡山',start:'12:00',end:'22:00',allowance:25400},
+    {name:'保土谷ロジスティクス㈱ 郡山（2マン）',start:'15:00',end:'22:00',allowance:25400},
+    {name:'三井化学㈱ 茂原',start:'14:30',end:'19:30',allowance:21400},
+    {name:'三井ダウケミカル㈱ 大竹',start:'14:00',end:'20:00',allowance:22200},
+    {name:'三菱ケミカル㈱ 富山',start:'16:30',end:'16:00',allowance:14800},
+    {name:'三菱ケミカル㈱ 富山（冬）',start:'16:30',end:'17:00',allowance:16400},
+    {name:'三菱ケミカル㈱ 広島',start:'14:00',end:'20:00',allowance:22200},
+    {name:'山形スリーエム㈱ 東根（2マン）',start:'11:30',end:'0:30',allowance:31400},
+    {name:'山南合成㈱ 福井',start:'18:30',end:'15:30',allowance:10600},
+    {name:'ヤヨイ化学工業㈱ 射水（EA）（BA）',start:'17:00',end:'16:00',allowance:14000},
+    {name:'ヤヨイ化学工業㈱ 射水（HA）',start:'18:00',end:'16:00',allowance:12400},
+    {name:'ヤヨイ化学工業㈱ 射水（冬）',start:'17:00',end:'17:00',allowance:15600},
+    {name:'ユニマテック㈱ 第1',start:'13:00',end:'20:30',allowance:23000},
+    {name:'横浜ポリマー研究所 山梨（BA）',start:'16:00',end:'16:00',allowance:14800},
+    {name:'横浜ポリマー研究所 山梨（HA）',start:'18:00',end:'16:00',allowance:12400},
+    {name:'ライオン化学㈱ 鹿島',start:'14:00',end:'20:00',allowance:22200},
+    {name:'レゾナック 伊勢崎',start:'15:00',end:'18:30',allowance:18800},
+    {name:'レゾナック 川崎',start:'16:30',end:'17:00',allowance:16400},
+    {name:'レゾナック 龍野',start:'17:00',end:'16:30',allowance:14800},
+    {name:'ロックペイント㈱ 福崎',start:'17:30',end:'16:00',allowance:13200},
+    {name:'関東SP 東洋合成工業㈱（引取）',start:'15:30',end:'18:00',allowance:18200},
+    {name:'関東SP 丸善㈱（引取）',start:'15:00',end:'19:00',allowance:20400},
+    {name:'関西SP 関西化成品輸送㈱（引取）',start:'19:00',end:'15:00',allowance:8200},
+    {name:'㈱日本触媒 吹田（引取）',start:'17:00',end:'17:00',allowance:15400},
+    {name:'㈱日本触媒 姫路（引取）',start:'17:00',end:'17:00',allowance:15400},
+  ],
+  sulfuric:[
+    {name:'田中化学研究所 福井工場',start:'18:30',end:'15:30',allowance:10600},
+    {name:'GSユアサ 群馬',start:'12:30',end:'19:00',allowance:21600},
+  ],
+  polymer:[
+    {name:'アクアスエンジ㈱ つくば',start:'14:30',end:'18:30',allowance:18800},
+    {name:'旭化成ケミカルズ㈱ 川崎',start:'16:30',end:'16:00',allowance:14800},
+    {name:'旭化成ケミカルズ㈱ 水島',start:'16:30',end:'16:30',allowance:15600},
+    {name:'王子製紙㈱ 富岡',start:'15:30',end:'17:30',allowance:17200},
+    {name:'北広ケミカル㈱ 南',start:'18:00',end:'15:30',allowance:11600},
+    {name:'クリタケミカル製造㈱ 猿島（本社）T-50',start:'14:30',end:'18:30',allowance:18800},
+    {name:'クリタケミカル製造㈱ 赤穂 T-50',start:'16:30',end:'16:00',allowance:14800},
+    {name:'クリタケミカル製造㈱ 赤穂 A-6051',start:'16:30',end:'16:00',allowance:14800},
+    {name:'クリタケミカル製造㈱ 猿島（本社）A-6051',start:'14:30',end:'19:00',allowance:18800},
+    {name:'中越パルプ工業㈱ 高岡',start:'18:00',end:'14:30',allowance:9200},
+    {name:'中越パルプ工業㈱ 高岡（冬）',start:'17:00',end:'15:30',allowance:13200},
+    {name:'テイカ㈱ 岡山',start:'17:00',end:'16:30',allowance:14800},
+    {name:'東亜合成㈱ 広野',start:'12:30',end:'20:30',allowance:23000},
+    {name:'日本エイアンドエル㈱ 愛媛',start:'14:30',end:'19:00',allowance:20600},
+    {name:'日本エイアンドエル㈱ 千葉',start:'14:30',end:'17:00',allowance:16400},
+    {name:'日本製紙㈱ 石巻（2マン）',start:'11:00',end:'23:30',allowance:29400},
+    {name:'日本製紙㈱ 岩国',start:'14:00',end:'20:00',allowance:22200},
+    {name:'㈱ADEKA 富士',start:'18:30',end:'14:00',allowance:7400},
+    {name:'㈱イメリス・ミネラルズ・ジャパン',start:'18:30',end:'14:30',allowance:8400},
+    {name:'㈱エイゼット',start:'18:30',end:'15:00',allowance:9000},
+    {name:'㈱エイゼット（冬）',start:'17:30',end:'16:00',allowance:13200},
+    {name:'㈱エヌ・エス・カラーテクノ 北陸',start:'19:30',end:'14:30',allowance:6600},
+    {name:'㈱片山化学工業研究所 綾部',start:'17:00',end:'16:00',allowance:14000},
+    {name:'㈱キング・ライン',start:'18:00',end:'15:00',allowance:10800},
+    {name:'㈱小松プロセス',start:'18:30',end:'15:00',allowance:9000},
+    {name:'㈱ニイタカ つくば',start:'14:30',end:'18:30',allowance:19800},
+    {name:'㈱ファイマテック 富士',start:'18:30',end:'14:30',allowance:8400},
+    {name:'㈱フローリック 東松山',start:'16:00',end:'18:00',allowance:18000},
+    {name:'㈱フローリック 厚木',start:'17:30',end:'16:30',allowance:13800},
+    {name:'旭ファイバーグラス 湘南',start:'',end:'',allowance:14600},
+    {name:'東京化成品センター（苛性カリ）',start:'16:30',end:'17:00',allowance:16400},
+    {name:'田中化学研究所 福井工場（濃硫酸）',start:'18:30',end:'15:30',allowance:10600},
+    {name:'GSユアサ 群馬（濃硫酸）',start:'12:30',end:'19:00',allowance:21600},
+  ],
+};
+
 let db={ester:{},sulfuric:[],polymer:{}};
 let curProduct=0,curArea=null,curKey=null,editMode=false;
 
 function initDB(){
-  AREAS.forEach(a=>{
-    if(!db.ester[a])db.ester[a]=[];
-    if(!db.polymer[a])db.polymer[a]=[];
-  });
+  AREAS.forEach(a=>{if(!db.ester[a])db.ester[a]=[];if(!db.polymer[a])db.polymer[a]=[];});
   if(!Array.isArray(db.sulfuric))db.sulfuric=[];
 }
 function loadDB(){
@@ -151,29 +346,30 @@ function loadDB(){
   initDB();
 }
 function saveDB(){localStorage.setItem('niouroshi-v2',JSON.stringify(db));}
-function getList(tab,area){
-  if(tab===0)return db.ester[area]||[];
-  if(tab===1)return db.sulfuric;
-  if(tab===2)return db.polymer[area]||[];
-  return[];
-}
-function setList(tab,area,arr){
-  if(tab===0)db.ester[area]=arr;
-  else if(tab===1)db.sulfuric=arr;
-  else if(tab===2)db.polymer[area]=arr;
-}
-function totalCount(tab){
-  if(!HAS_AREA[tab])return getList(tab,null).length;
-  return AREAS.reduce((s,a)=>s+getList(tab,a).length,0);
-}
+function getList(tab,area){if(tab===0)return db.ester[area]||[];if(tab===1)return db.sulfuric;if(tab===2)return db.polymer[area]||[];return[];}
+function setList(tab,area,arr){if(tab===0)db.ester[area]=arr;else if(tab===1)db.sulfuric=arr;else if(tab===2)db.polymer[area]=arr;}
+function totalCount(tab){if(!HAS_AREA[tab])return getList(tab,null).length;return AREAS.reduce((s,a)=>s+getList(tab,a).length,0);}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
-function encKey(tab,area,idx){return btoa(encodeURIComponent(JSON.stringify({tab,area,idx})));}
-function decKey(k){return JSON.parse(decodeURIComponent(atob(k)));}
+function encKey(tab,area,idx){const s=JSON.stringify({tab,area,idx});return btoa(unescape(encodeURIComponent(s)));}
+function decKey(k){return JSON.parse(decodeURIComponent(escape(atob(k))));}
 function show(id){document.getElementById(id).style.display='block';}
 function hide(id){document.getElementById(id).style.display='none';}
 function hideAll(){['view-top','view-area','view-dest','view-detail','view-form'].forEach(hide);}
 
-function buildTimeOptions(sel){
+function buildTimeOptions(sel,minH,maxH){
+  let o='<option value="">--</option>';
+  const lo=minH!==undefined?minH:0;
+  const hi=maxH!==undefined?maxH:23;
+  for(let h=lo;h<=hi;h++){
+    for(let m=0;m<60;m+=15){
+      if(h===hi&&m>0)break;
+      const v=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+      o+=`<option value="${v}"${v===sel?' selected':''}>${v}</option>`;
+    }
+  }
+  return o;
+}
+function buildAllTimeOptions(sel){
   let o='<option value="">--</option>';
   for(let h=0;h<24;h++){
     for(let m=0;m<60;m+=15){
@@ -184,22 +380,22 @@ function buildTimeOptions(sel){
   return o;
 }
 function initTimeSelects(s,e){
-  document.getElementById('f-start').innerHTML=buildTimeOptions(s||'');
-  document.getElementById('f-end').innerHTML=buildTimeOptions(e||'');
+  document.getElementById('f-start').innerHTML=buildTimeOptions(s||'',10,20);
+  document.getElementById('f-end').innerHTML=buildTimeOptions(e||'',14,23);
+}
+function setTimeSelectsFromRate(s,e){
+  document.getElementById('f-start').innerHTML=buildAllTimeOptions(s||'');
+  document.getElementById('f-end').innerHTML=buildAllTimeOptions(e||'');
 }
 
 function showTop(){
   hideAll();show('view-top');
   document.getElementById('product-list').innerHTML=PRODUCTS.map((p,i)=>`
     <div class="row-card" onclick="showArea(${i})">
-      <div class="row-card-body">
-        <div class="row-card-name">${p}</div>
-        <div class="row-card-sub">${totalCount(i)}件登録</div>
-      </div>
+      <div class="row-card-body"><div class="row-card-name">${p}</div><div class="row-card-sub">${totalCount(i)}件登録</div></div>
       <div class="row-card-arrow">›</div>
     </div>`).join('');
 }
-
 function showArea(tabIdx){
   if(tabIdx!==undefined)curProduct=tabIdx;
   if(!HAS_AREA[curProduct]){showDest(null);return;}
@@ -208,18 +404,12 @@ function showArea(tabIdx){
   document.getElementById('area-list').innerHTML=AREAS.map(area=>{
     const cnt=getList(curProduct,area).length;
     return`<div class="row-card" onclick="showDest('${area}')">
-      <div class="row-card-body">
-        <div class="row-card-name">${area}</div>
-        <div class="row-card-sub">${cnt}件</div>
-      </div>
-      <div class="row-card-arrow">›</div>
-    </div>`;
+      <div class="row-card-body"><div class="row-card-name">${area}</div><div class="row-card-sub">${cnt}件</div></div>
+      <div class="row-card-arrow">›</div></div>`;
   }).join('');
 }
-
 function showDest(area){
-  curArea=area;
-  hideAll();show('view-dest');
+  curArea=area;hideAll();show('view-dest');
   const label=HAS_AREA[curProduct]&&area?`${PRODUCTS[curProduct]} › ${area}`:PRODUCTS[curProduct];
   document.getElementById('dest-title').textContent=label;
   const list=getList(curProduct,area);
@@ -234,41 +424,30 @@ function showDest(area){
       <div class="row-card-body">
         <div class="row-card-name">${esc(d.name||'（名称未設定）')}</div>
         ${sub.length?`<div class="row-card-sub">${esc(sub.join('　'))}</div>`:''}
-      </div>
-      <div class="row-card-arrow">›</div>
-    </div>`;
+      </div><div class="row-card-arrow">›</div></div>`;
   });
-  html+=`<div class="add-card" onclick="showForm('new')">
-    <div class="add-card-icon">+</div>
-    <span>客先を追加</span>
-  </div>`;
+  html+=`<div class="add-card" onclick="showForm('new')"><div class="add-card-icon">+</div><span>客先を追加</span></div>`;
   document.getElementById('dest-list').innerHTML=html;
 }
-function backFromDest(){
-  if(HAS_AREA[curProduct]){hideAll();show('view-area');showArea();}
-  else{showTop();}
-}
+function backFromDest(){if(HAS_AREA[curProduct]){hideAll();show('view-area');showArea();}else{showTop();}}
 
 function showDetail(key){
   curKey=key;
   const {tab,area,idx}=decKey(key);
-  const d=getList(tab,area)[idx];
-  if(!d)return;
+  const d=getList(tab,area)[idx];if(!d)return;
   document.getElementById('detail-title').textContent=d.name||'（名称未設定）';
   let html='<div style="margin-top:8px">';
   html+=`<div class="section"><div class="section-label">基本情報</div>`;
   html+=`<div class="info-row"><span class="info-key">品目</span><span class="info-val">${PRODUCTS[tab]}</span></div>`;
   if(HAS_AREA[tab]&&area)html+=`<div class="info-row"><span class="info-key">エリア</span><span class="info-val">${esc(area)}</span></div>`;
-  html+=`</div>`;
-  html+=`<div class="section"><div class="section-label">運行情報</div>`;
+  html+=`</div><div class="section"><div class="section-label">運行情報</div>`;
   if(d.allowance)html+=`<div class="info-row"><span class="info-key">運行手当</span><span class="info-val">¥${Number(d.allowance).toLocaleString()}</span></div>`;
   if(d.start)html+=`<div class="info-row"><span class="info-key">始業</span><span class="info-val">${esc(d.start)}</span></div>`;
   if(d.end)html+=`<div class="info-row"><span class="info-key">終業</span><span class="info-val">${esc(d.end)}</span></div>`;
   if(!d.allowance&&!d.start&&!d.end)html+=`<div style="font-size:13px;color:#ccc">未登録</div>`;
   html+=`</div>`;
   if(d.notes)html+=`<div class="section"><div class="section-label">メモ</div><div class="note-box">${esc(d.notes)}</div></div>`;
-  html+=`<button class="del-btn" onclick="deleteDest()">この客先を削除</button>`;
-  html+='</div>';
+  html+=`<button class="del-btn" onclick="deleteDest()">この客先を削除</button></div>`;
   document.getElementById('detail-body').innerHTML=html;
   hideAll();show('view-detail');
 }
@@ -278,71 +457,84 @@ function showForm(mode){
   editMode=(mode==='edit');
   document.getElementById('form-title').textContent=editMode?'編集':'客先を追加';
   let d=null;
-  if(editMode&&curKey){
-    const k=decKey(curKey);
-    d=getList(k.tab,k.area)[k.idx];
-  }
+  if(editMode&&curKey){const k=decKey(curKey);d=getList(k.tab,k.area)[k.idx];}
   document.getElementById('f-name').value=d?d.name||'':'';
   document.getElementById('f-allowance').value=d?d.allowance||'':'';
   document.getElementById('f-notes').value=d?d.notes||'':'';
+  document.getElementById('rate-select-label').textContent='料金表から客先を選ぶ';
   initTimeSelects(d?d.start:'',d?d.end:'');
   hideAll();show('view-form');
 }
 function cancelForm(){
   hideAll();
-  if(editMode&&curKey){showDetail(curKey);}
-  else{showDest(curArea);}
+  if(editMode&&curKey){showDetail(curKey);}else{showDest(curArea);}
 }
 function saveDest(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){alert('客先名を入力してください');return;}
-  const d={
-    name,
-    allowance:document.getElementById('f-allowance').value.trim(),
-    start:document.getElementById('f-start').value,
-    end:document.getElementById('f-end').value,
-    notes:document.getElementById('f-notes').value.trim()
-  };
+  const d={name,allowance:document.getElementById('f-allowance').value.trim(),start:document.getElementById('f-start').value,end:document.getElementById('f-end').value,notes:document.getElementById('f-notes').value.trim()};
   if(editMode&&curKey){
-    const k=decKey(curKey);
-    const list=getList(k.tab,k.area);
-    list[k.idx]=d;setList(k.tab,k.area,list);saveDB();
-    curKey=encKey(k.tab,k.area,k.idx);
-    hideAll();showDetail(curKey);
+    const k=decKey(curKey);const list=getList(k.tab,k.area);list[k.idx]=d;setList(k.tab,k.area,list);saveDB();
+    curKey=encKey(k.tab,k.area,k.idx);hideAll();showDetail(curKey);
   } else {
-    const list=getList(curProduct,curArea);
-    list.push(d);setList(curProduct,curArea,list);saveDB();
+    const list=getList(curProduct,curArea);list.push(d);setList(curProduct,curArea,list);saveDB();
     hideAll();showDest(curArea);
   }
 }
 function deleteDest(){
   if(!confirm('この客先を削除しますか？'))return;
-  const {tab,area,idx}=decKey(curKey);
-  const list=getList(tab,area);
+  const {tab,area,idx}=decKey(curKey);const list=getList(tab,area);
   list.splice(idx,1);setList(tab,area,list);saveDB();
-  curKey=null;curArea=area;curProduct=tab;
-  hideAll();showDest(area);
+  curKey=null;curArea=area;curProduct=tab;hideAll();showDest(area);
+}
+
+function getRateKey(){return['ester','sulfuric','polymer'][curProduct];}
+function openRateModal(){
+  document.getElementById('rate-modal-title').textContent=PRODUCTS[curProduct]+'の料金表';
+  document.getElementById('rate-search').value='';
+  renderRateList();
+  document.getElementById('rate-modal').classList.add('open');
+}
+function closeRateModal(){document.getElementById('rate-modal').classList.remove('open');}
+function closeRateModalBg(e){if(e.target===document.getElementById('rate-modal'))closeRateModal();}
+function renderRateList(){
+  const q=document.getElementById('rate-search').value.trim().toLowerCase();
+  const all=RATE_DATA[getRateKey()]||[];
+  const list=all.filter(r=>!q||r.name.toLowerCase().includes(q));
+  const el=document.getElementById('rate-list');
+  if(!list.length){el.innerHTML='<div class="empty-hint">該当なし</div>';return;}
+  el.innerHTML=list.map(r=>{
+    const origIdx=all.indexOf(r);
+    return`<div class="modal-item" onclick="selectRate(${origIdx})">
+      <div>
+        <div class="modal-item-name">${esc(r.name)}</div>
+        <div class="modal-item-sub">${r.start||'--'} 〜 ${r.end||'--'}</div>
+      </div>
+      <div class="modal-item-price">¥${Number(r.allowance).toLocaleString()}</div>
+    </div>`;
+  }).join('');
+}
+function selectRate(idx){
+  const r=(RATE_DATA[getRateKey()]||[])[idx];if(!r)return;
+  document.getElementById('f-name').value=r.name;
+  document.getElementById('f-allowance').value=r.allowance;
+  document.getElementById('rate-select-label').textContent=r.name;
+  setTimeSelectsFromRate(r.start,r.end);
+  closeRateModal();
 }
 
 function exportJSON(){
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  const d=new Date();
-  a.href=url;
-  a.download=`niouroshi_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  const url=URL.createObjectURL(blob);const a=document.createElement('a');const d=new Date();
+  a.href=url;a.download=`niouroshi_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
   a.click();URL.revokeObjectURL(url);
 }
 function importJSON(e){
   const file=e.target.files[0];if(!file)return;
   const r=new FileReader();
   r.onload=ev=>{
-    try{
-      const parsed=JSON.parse(ev.target.result);
-      if(confirm('現在のデータを上書きしますか？')){
-        db=parsed;initDB();saveDB();showTop();alert('読み込み完了しました');
-      }
-    }catch{alert('ファイルの読み込みに失敗しました');}
+    try{const parsed=JSON.parse(ev.target.result);if(confirm('現在のデータを上書きしますか？')){db=parsed;initDB();saveDB();showTop();alert('読み込み完了しました');}}
+    catch{alert('ファイルの読み込みに失敗しました');}
   };
   r.readAsText(file);e.target.value='';
 }
