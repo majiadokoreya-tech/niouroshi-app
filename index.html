@@ -88,6 +88,7 @@ input[type=file]{display:none}
   <div class="nav-header">
     <span class="back-btn" onclick="showTop()">＜ 戻る</span>
     <span class="screen-title" id="area-title"></span>
+    <span class="edit-link" id="area-edit-btn" onclick="toggleAreaEdit()">編集</span>
   </div>
   <div class="card-list" id="area-list"></div>
 </div>
@@ -342,7 +343,10 @@ let db={ester:{},sulfuric:[],polymer:{}};
 let curProduct=0,curArea=null,curKey=null,editMode=false;
 
 function initDB(){
-  AREAS.forEach(a=>{if(!db.ester[a])db.ester[a]=[];if(!db.polymer[a])db.polymer[a]=[];});
+  if(!db.esterAreas)db.esterAreas=[...AREAS];
+  if(!db.polymerAreas)db.polymerAreas=[...AREAS];
+  db.esterAreas.forEach(a=>{if(!db.ester[a])db.ester[a]=[];});
+  db.polymerAreas.forEach(a=>{if(!db.polymer[a])db.polymer[a]=[];});
   if(!Array.isArray(db.sulfuric))db.sulfuric=[];
 }
 function loadDB(){
@@ -352,7 +356,11 @@ function loadDB(){
 function saveDB(){localStorage.setItem('niouroshi-v2',JSON.stringify(db));}
 function getList(tab,area){if(tab===0)return db.ester[area]||[];if(tab===1)return db.sulfuric;if(tab===2)return db.polymer[area]||[];return[];}
 function setList(tab,area,arr){if(tab===0)db.ester[area]=arr;else if(tab===1)db.sulfuric=arr;else if(tab===2)db.polymer[area]=arr;}
-function totalCount(tab){if(!HAS_AREA[tab])return getList(tab,null).length;return AREAS.reduce((s,a)=>s+getList(tab,a).length,0);}
+function totalCount(tab){
+  if(!HAS_AREA[tab])return getList(tab,null).length;
+  const areas=tab===0?db.esterAreas:db.polymerAreas;
+  return(areas||AREAS).reduce((s,a)=>s+getList(tab,a).length,0);
+}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 function encKey(tab,area,idx){const s=JSON.stringify({tab,area,idx});return btoa(unescape(encodeURIComponent(s)));}
 function decKey(k){return JSON.parse(decodeURIComponent(escape(atob(k))));}
@@ -400,17 +408,104 @@ function showTop(){
       <div class="row-card-arrow">›</div>
     </div>`).join('');
 }
+let areaEditMode=false;
+
+function getAreaList(){
+  return curProduct===0?db.esterAreas||(db.esterAreas=[...AREAS]):db.polymerAreas||(db.polymerAreas=[...AREAS]);
+}
+function setAreaList(arr){
+  if(curProduct===0)db.esterAreas=arr;
+  else db.polymerAreas=arr;
+}
+
 function showArea(tabIdx){
-  if(tabIdx!==undefined)curProduct=tabIdx;
+  if(tabIdx!==undefined){curProduct=tabIdx;areaEditMode=false;}
   if(!HAS_AREA[curProduct]){showDest(null);return;}
   hideAll();show('view-area');
   document.getElementById('area-title').textContent=PRODUCTS[curProduct];
-  document.getElementById('area-list').innerHTML=AREAS.map(area=>{
-    const cnt=getList(curProduct,area).length;
-    return`<div class="row-card" onclick="showDest('${area}')">
-      <div class="row-card-body"><div class="row-card-name">${area}</div><div class="row-card-sub">${cnt}件</div></div>
-      <div class="row-card-arrow">›</div></div>`;
-  }).join('');
+  document.getElementById('area-edit-btn').textContent=areaEditMode?'完了':'編集';
+  renderAreaList();
+}
+function renderAreaList(){
+  const areas=getAreaList();
+  let html='';
+  if(areaEditMode){
+    html+=areas.map((area,i)=>`
+      <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e5e5e0;border-radius:12px;padding:10px 12px;margin-bottom:10px">
+        <input style="flex:1;padding:8px 10px;border:1px solid #e0e0dc;border-radius:8px;font-size:15px;outline:none" value="${esc(area)}" id="area-input-${i}" onblur="renameArea(${i},this.value)">
+        <span style="font-size:22px;color:#e53935;cursor:pointer;padding:0 4px;line-height:1" onclick="deleteArea(${i})">×</span>
+      </div>`).join('');
+    html+=`<div class="add-card" onclick="addArea()"><div class="add-card-icon">+</div><span>エリアを追加</span></div>`;
+  } else {
+    if(!areas.length)html='<div class="empty-hint">エリアが登録されていません</div>';
+    html+=areas.map((area,i)=>{
+      const cnt=getList(curProduct,area).length;
+      return`<div class="row-card" onclick="showDestByIdx(${i})">
+        <div class="row-card-body"><div class="row-card-name">${esc(area)}</div><div class="row-card-sub">${cnt}件</div></div>
+        <div class="row-card-arrow">›</div></div>`;
+    }).join('');
+  }
+  document.getElementById('area-list').innerHTML=html;
+}
+function showDestByIdx(i){
+  const areas=getAreaList();
+  if(areas[i]!==undefined)showDest(areas[i]);
+}
+function toggleAreaEdit(){
+  if(areaEditMode){
+    // 完了押下時：全inputの値を一括保存
+    const areas=getAreaList();
+    areas.forEach((_,i)=>{
+      const inp=document.getElementById('area-input-'+i);
+      if(inp)renameArea(i,inp.value);
+    });
+  }
+  areaEditMode=!areaEditMode;
+  document.getElementById('area-edit-btn').textContent=areaEditMode?'完了':'編集';
+  renderAreaList();
+}
+function renameArea(idx,newName){
+  newName=newName.trim();
+  if(!newName)return;
+  const areas=getAreaList();
+  const oldName=areas[idx];
+  if(oldName===newName)return;
+  if(areas.includes(newName)){alert('同じ名前のエリアがすでにあります');return;}
+  // データ移行
+  const tabKey=curProduct===0?'ester':'polymer';
+  const oldData=db[tabKey][oldName]||[];
+  db[tabKey][newName]=oldData;
+  delete db[tabKey][oldName];
+  areas[idx]=newName;
+  setAreaList(areas);
+  saveDB();
+}
+function deleteArea(idx){
+  const areas=getAreaList();
+  const area=areas[idx];
+  const cnt=getList(curProduct,area).length;
+  if(cnt>0){
+    if(!confirm(`「${area}」には${cnt}件の客先があります。削除すると客先データも消えます。よろしいですか？`))return;
+    const tabKey=curProduct===0?'ester':'polymer';
+    delete db[tabKey][area];
+  }
+  areas.splice(idx,1);
+  setAreaList(areas);
+  saveDB();
+  renderAreaList();
+}
+function addArea(){
+  const name=prompt('新しいエリア名を入力してください');
+  if(!name||!name.trim())return;
+  const trimmed=name.trim();
+  const areas=getAreaList();
+  if(areas.includes(trimmed)){alert('同じ名前のエリアがすでにあります');return;}
+  areas.push(trimmed);
+  setAreaList(areas);
+  const tabKey=curProduct===0?'ester':'polymer';
+  if(!db[tabKey][trimmed])db[tabKey][trimmed]=[];
+  saveDB();
+  renderAreaList();
 }
 function showDest(area){
   curArea=area;hideAll();show('view-dest');
@@ -433,7 +528,7 @@ function showDest(area){
   html+=`<div class="add-card" onclick="showForm('new')"><div class="add-card-icon">+</div><span>客先を追加</span></div>`;
   document.getElementById('dest-list').innerHTML=html;
 }
-function backFromDest(){if(HAS_AREA[curProduct]){hideAll();show('view-area');showArea();}else{showTop();}}
+function backFromDest(){if(HAS_AREA[curProduct]){areaEditMode=false;hideAll();show('view-area');showArea();}else{showTop();}}
 
 function showDetail(key){
   curKey=key;
@@ -465,7 +560,8 @@ function showForm(mode){
   const areaSec=document.getElementById('f-area-sec');
   if(HAS_AREA[tab]){
     areaSec.style.display='block';
-    document.getElementById('f-area').innerHTML=AREAS.map(a=>`<option value="${a}"${a===area?' selected':''}>${a}</option>`).join('');
+    const areaList=tab===0?db.esterAreas:db.polymerAreas;
+    document.getElementById('f-area').innerHTML=(areaList||AREAS).map(a=>`<option value="${esc(a)}"${a===area?' selected':''}>${esc(a)}</option>`).join('');
   } else {
     areaSec.style.display='none';
   }
