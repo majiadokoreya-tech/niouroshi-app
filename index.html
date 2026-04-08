@@ -123,6 +123,10 @@ input[type=file]{display:none}
       </button>
       <div class="form-hint">選択すると客先名・時間・手当が自動入力されます</div>
     </div>
+    <div class="form-section" id="f-area-sec">
+      <div class="form-label">エリア</div>
+      <select class="form-select" id="f-area"></select>
+    </div>
     <div class="form-section">
       <div class="form-label">客先名</div>
       <input class="form-input" id="f-name" type="text" placeholder="例：〇〇化学工業">
@@ -456,8 +460,15 @@ function backFromDetail(){hideAll();show('view-dest');showDest(curArea);}
 function showForm(mode){
   editMode=(mode==='edit');
   document.getElementById('form-title').textContent=editMode?'編集':'客先を追加';
-  let d=null;
-  if(editMode&&curKey){const k=decKey(curKey);d=getList(k.tab,k.area)[k.idx];}
+  let d=null,tab=curProduct,area=curArea;
+  if(editMode&&curKey){const k=decKey(curKey);tab=k.tab;area=k.area;d=getList(k.tab,k.area)[k.idx];}
+  const areaSec=document.getElementById('f-area-sec');
+  if(HAS_AREA[tab]){
+    areaSec.style.display='block';
+    document.getElementById('f-area').innerHTML=AREAS.map(a=>`<option value="${a}"${a===area?' selected':''}>${a}</option>`).join('');
+  } else {
+    areaSec.style.display='none';
+  }
   document.getElementById('f-name').value=d?d.name||'':'';
   document.getElementById('f-allowance').value=d?d.allowance||'':'';
   document.getElementById('f-notes').value=d?d.notes||'':'';
@@ -474,8 +485,22 @@ function saveDest(){
   if(!name){alert('客先名を入力してください');return;}
   const d={name,allowance:document.getElementById('f-allowance').value.trim(),start:document.getElementById('f-start').value,end:document.getElementById('f-end').value,notes:document.getElementById('f-notes').value.trim()};
   if(editMode&&curKey){
-    const k=decKey(curKey);const list=getList(k.tab,k.area);list[k.idx]=d;setList(k.tab,k.area,list);saveDB();
-    curKey=encKey(k.tab,k.area,k.idx);hideAll();showDetail(curKey);
+    const k=decKey(curKey);
+    const newArea=HAS_AREA[k.tab]?document.getElementById('f-area').value:k.area;
+    if(newArea!==k.area){
+      // エリア変更：旧エリアから削除して新エリアに追加
+      const oldList=getList(k.tab,k.area);
+      oldList.splice(k.idx,1);setList(k.tab,k.area,oldList);
+      const newList=getList(k.tab,newArea);
+      newList.push(d);setList(k.tab,newArea,newList);
+      saveDB();
+      curArea=newArea;
+      curKey=encKey(k.tab,newArea,newList.length-1);
+    } else {
+      const list=getList(k.tab,k.area);list[k.idx]=d;setList(k.tab,k.area,list);saveDB();
+      curKey=encKey(k.tab,k.area,k.idx);
+    }
+    hideAll();showDetail(curKey);
   } else {
     const list=getList(curProduct,curArea);list.push(d);setList(curProduct,curArea,list);saveDB();
     hideAll();showDest(curArea);
