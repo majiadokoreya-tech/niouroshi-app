@@ -70,12 +70,29 @@ input[type=file]{display:none}
 .rate-select-btn{width:100%;padding:10px 12px;border:1px solid #007aff;border-radius:8px;font-size:14px;color:#007aff;background:#fff;text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .rate-select-btn:active{background:#f0f5ff}
 .rate-select-btn span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 写真 */
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+.photo-thumb{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid #e5e5e0;cursor:pointer}
+.photo-add{width:100%;aspect-ratio:1;border:1px dashed #c8c8c4;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#bbb;cursor:pointer;background:#fafaf8}
+.photo-add:active{background:#f0f0ec}
+.photo-viewer{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:300;flex-direction:column;align-items:center;justify-content:center}
+.photo-viewer.open{display:flex}
+.photo-viewer img{max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px}
+.photo-viewer-close{position:absolute;top:16px;right:16px;color:#fff;font-size:28px;cursor:pointer;line-height:1;padding:8px}
+.photo-viewer-del{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);color:#ff4444;font-size:15px;cursor:pointer;padding:10px 24px;background:rgba(255,255,255,0.15);border-radius:20px}
+/* スワイプ */
+.swipe-wrap{position:relative;overflow:hidden}
+.swipe-wrap>div{transition:transform 0.25s ease}
 </style>
 </head>
 <body>
 
 <div id="view-top">
   <div class="nav-header"><span class="screen-title">荷卸し先</span></div>
+  <div style="padding:10px 12px 0">
+    <input id="top-search" type="text" class="form-input" placeholder="客先名・記号で検索..." oninput="renderTopSearch()" autocomplete="off">
+  </div>
+  <div id="search-results" style="display:none;padding:0 12px"></div>
   <div class="card-list" id="product-list"></div>
   <div class="backup-bar">
     <button class="backup-btn" onclick="exportJSON()">バックアップ保存</button>
@@ -129,6 +146,11 @@ input[type=file]{display:none}
       <select class="form-select" id="f-area"></select>
     </div>
     <div class="form-section">
+      <div class="form-label">配車記号</div>
+      <input class="form-input" id="f-symbol" type="text" placeholder="例：浮" style="max-width:100px">
+      <div class="form-hint">配車表で使われる記号（任意）</div>
+    </div>
+    <div class="form-section">
       <div class="form-label">客先名</div>
       <input class="form-input" id="f-name" type="text" placeholder="例：〇〇化学工業">
     </div>
@@ -149,6 +171,11 @@ input[type=file]{display:none}
       <div class="form-label">メモ</div>
       <textarea class="form-textarea" id="f-notes" placeholder="注意事項や備考など"></textarea>
     </div>
+    <div class="form-section">
+      <div class="form-label">写真</div>
+      <div class="photo-grid" id="f-photo-grid"></div>
+      <input type="file" id="f-photo-input" accept="image/*" multiple onchange="onPhotoSelected(event)">
+    </div>
     <div style="padding:8px 0 16px">
       <button class="save-btn" onclick="saveDest()">保存する</button>
     </div>
@@ -168,10 +195,16 @@ input[type=file]{display:none}
   </div>
 </div>
 
+<div id="photo-viewer" class="photo-viewer" onclick="closePhotoViewer(event)">
+  <span class="photo-viewer-close" onclick="closePhotoViewer()">×</span>
+  <img id="photo-viewer-img" src="">
+  <span class="photo-viewer-del" onclick="deleteViewingPhoto()">この写真を削除</span>
+</div>
+
 <script>
-const PRODUCTS=['エステル','硫酸','ポリマー'];
+const PRODUCTS=['エステル','硫酸','ポリマー','塩素'];
 const AREAS=['西関東','東関東','中部','近畿関西','北陸','中国四国','九州'];
-const HAS_AREA=[true,false,true];
+const HAS_AREA=[true,false,true,false];
 
 const RATE_DATA={
   ester:[
@@ -339,7 +372,7 @@ const RATE_DATA={
   ],
 };
 
-let db={ester:{},sulfuric:[],polymer:{}};
+let db={ester:{},sulfuric:[],polymer:{},chlorine:[]};
 let curProduct=0,curArea=null,curKey=null,editMode=false;
 
 function initDB(){
@@ -348,14 +381,26 @@ function initDB(){
   db.esterAreas.forEach(a=>{if(!db.ester[a])db.ester[a]=[];});
   db.polymerAreas.forEach(a=>{if(!db.polymer[a])db.polymer[a]=[];});
   if(!Array.isArray(db.sulfuric))db.sulfuric=[];
+  if(!Array.isArray(db.chlorine))db.chlorine=[];
 }
 function loadDB(){
   try{const r=localStorage.getItem('niouroshi-v2');if(r)db=JSON.parse(r);}catch(e){}
   initDB();
 }
 function saveDB(){localStorage.setItem('niouroshi-v2',JSON.stringify(db));}
-function getList(tab,area){if(tab===0)return db.ester[area]||[];if(tab===1)return db.sulfuric;if(tab===2)return db.polymer[area]||[];return[];}
-function setList(tab,area,arr){if(tab===0)db.ester[area]=arr;else if(tab===1)db.sulfuric=arr;else if(tab===2)db.polymer[area]=arr;}
+function getList(tab,area){
+  if(tab===0)return db.ester[area]||[];
+  if(tab===1)return db.sulfuric;
+  if(tab===2)return db.polymer[area]||[];
+  if(tab===3)return db.chlorine;
+  return[];
+}
+function setList(tab,area,arr){
+  if(tab===0)db.ester[area]=arr;
+  else if(tab===1)db.sulfuric=arr;
+  else if(tab===2)db.polymer[area]=arr;
+  else if(tab===3)db.chlorine=arr;
+}
 function totalCount(tab){
   if(!HAS_AREA[tab])return getList(tab,null).length;
   const areas=tab===0?db.esterAreas:db.polymerAreas;
@@ -402,6 +447,9 @@ function setTimeSelectsFromRate(s,e){
 
 function showTop(){
   hideAll();show('view-top');
+  document.getElementById('top-search').value='';
+  document.getElementById('search-results').style.display='none';
+  document.getElementById('product-list').style.display='block';
   document.getElementById('product-list').innerHTML=PRODUCTS.map((p,i)=>`
     <div class="row-card" onclick="showArea(${i})">
       <div class="row-card-body"><div class="row-card-name">${p}</div><div class="row-card-sub">${totalCount(i)}件登録</div></div>
@@ -411,11 +459,13 @@ function showTop(){
 let areaEditMode=false;
 
 function getAreaList(){
-  return curProduct===0?db.esterAreas||(db.esterAreas=[...AREAS]):db.polymerAreas||(db.polymerAreas=[...AREAS]);
+  if(curProduct===0)return db.esterAreas||(db.esterAreas=[...AREAS]);
+  if(curProduct===2)return db.polymerAreas||(db.polymerAreas=[...AREAS]);
+  return[];
 }
 function setAreaList(arr){
   if(curProduct===0)db.esterAreas=arr;
-  else db.polymerAreas=arr;
+  else if(curProduct===2)db.polymerAreas=arr;
 }
 
 function showArea(tabIdx){
@@ -521,7 +571,7 @@ function showDest(area){
     if(d.start||d.end)sub.push([d.start,d.end].filter(Boolean).join(' 〜 '));
     html+=`<div class="row-card" onclick="showDetail('${key}')">
       <div class="row-card-body">
-        <div class="row-card-name">${esc(d.name||'（名称未設定）')}</div>
+        <div class="row-card-name">${d.symbol?`<span style="display:inline-block;background:#f0f0ec;border-radius:4px;padding:0 6px;font-size:13px;color:#555;margin-right:6px">${esc(d.symbol)}</span>`:''}${esc(d.name||'（名称未設定）')}</div>
         ${sub.length?`<div class="row-card-sub">${esc(sub.join('　'))}</div>`:''}
       </div><div class="row-card-arrow">›</div></div>`;
   });
@@ -534,9 +584,10 @@ function showDetail(key){
   curKey=key;
   const {tab,area,idx}=decKey(key);
   const d=getList(tab,area)[idx];if(!d)return;
-  document.getElementById('detail-title').textContent=d.name||'（名称未設定）';
+  document.getElementById('detail-title').textContent=(d.symbol?`[${d.symbol}] `:'')+( d.name||'（名称未設定）');
   let html='<div style="margin-top:8px">';
   html+=`<div class="section"><div class="section-label">基本情報</div>`;
+  if(d.symbol)html+=`<div class="info-row"><span class="info-key">配車記号</span><span class="info-val">${esc(d.symbol)}</span></div>`;
   html+=`<div class="info-row"><span class="info-key">品目</span><span class="info-val">${PRODUCTS[tab]}</span></div>`;
   if(HAS_AREA[tab]&&area)html+=`<div class="info-row"><span class="info-key">エリア</span><span class="info-val">${esc(area)}</span></div>`;
   html+=`</div><div class="section"><div class="section-label">運行情報</div>`;
@@ -546,6 +597,11 @@ function showDetail(key){
   if(!d.allowance&&!d.start&&!d.end)html+=`<div style="font-size:13px;color:#ccc">未登録</div>`;
   html+=`</div>`;
   if(d.notes)html+=`<div class="section"><div class="section-label">メモ</div><div class="note-box">${esc(d.notes)}</div></div>`;
+  const photos=d.photos||[];
+  html+=`<div class="section"><div class="section-label">写真</div><div class="photo-grid">`;
+  photos.forEach((p,i)=>{html+=`<img class="photo-thumb" src="${p}" onclick="openPhotoViewer(${i})">`;});
+  html+=`<div class="photo-add" onclick="document.getElementById('detail-photo-input').click()">+</div>`;
+  html+=`</div><input type="file" id="detail-photo-input" accept="image/*" multiple onchange="onDetailPhotoSelected(event)"></div>`;
   html+=`<button class="del-btn" onclick="deleteDest()">この客先を削除</button></div>`;
   document.getElementById('detail-body').innerHTML=html;
   hideAll();show('view-detail');
@@ -565,10 +621,13 @@ function showForm(mode){
   } else {
     areaSec.style.display='none';
   }
+  document.getElementById('f-symbol').value=d?d.symbol||'':'';
   document.getElementById('f-name').value=d?d.name||'':'';
   document.getElementById('f-allowance').value=d?d.allowance||'':'';
   document.getElementById('f-notes').value=d?d.notes||'':'';
   document.getElementById('rate-select-label').textContent='料金表から客先を選ぶ';
+  formPhotos=d&&d.photos?[...d.photos]:[];
+  renderFormPhotos();
   initTimeSelects(d?d.start:'',d?d.end:'');
   hideAll();show('view-form');
 }
@@ -579,7 +638,7 @@ function cancelForm(){
 function saveDest(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){alert('客先名を入力してください');return;}
-  const d={name,allowance:document.getElementById('f-allowance').value.trim(),start:document.getElementById('f-start').value,end:document.getElementById('f-end').value,notes:document.getElementById('f-notes').value.trim()};
+  const d={symbol:document.getElementById('f-symbol').value.trim(),name,allowance:document.getElementById('f-allowance').value.trim(),start:document.getElementById('f-start').value,end:document.getElementById('f-end').value,notes:document.getElementById('f-notes').value.trim(),photos:formPhotos};
   if(editMode&&curKey){
     const k=decKey(curKey);
     const newArea=HAS_AREA[k.tab]?document.getElementById('f-area').value:k.area;
@@ -609,7 +668,57 @@ function deleteDest(){
   curKey=null;curArea=area;curProduct=tab;hideAll();showDest(area);
 }
 
-function getRateKey(){return['ester','sulfuric','polymer'][curProduct];}
+function getRateKey(){return['ester','sulfuric','polymer','chlorine'][curProduct]||'ester';}
+
+function renderTopSearch(){
+  const q=document.getElementById('top-search').value.trim().toLowerCase();
+  const sr=document.getElementById('search-results');
+  const pl=document.getElementById('product-list');
+  if(!q){sr.style.display='none';sr.innerHTML='';pl.style.display='block';return;}
+  pl.style.display='none';
+  sr.style.display='block';
+  const results=[];
+  PRODUCTS.forEach((prod,tab)=>{
+    if(!HAS_AREA[tab]){
+      getList(tab,null).forEach((d,idx)=>{
+        if((d.name||'').toLowerCase().includes(q)||(d.symbol||'').toLowerCase().includes(q)){
+          results.push({tab,area:null,idx,d});
+        }
+      });
+    } else {
+      const areas=tab===0?db.esterAreas:db.polymerAreas;
+      (areas||AREAS).forEach(area=>{
+        getList(tab,area).forEach((d,idx)=>{
+          if((d.name||'').toLowerCase().includes(q)||(d.symbol||'').toLowerCase().includes(q)){
+            results.push({tab,area,idx,d});
+          }
+        });
+      });
+    }
+  });
+  if(!results.length){sr.innerHTML='<div class="empty-hint">該当する客先が見つかりません</div>';return;}
+  sr.innerHTML=results.map(({tab,area,idx,d})=>{
+    const key=encKey(tab,area,idx);
+    const sub=[PRODUCTS[tab]];
+    if(area)sub.push(area);
+    if(d.allowance)sub.push('¥'+Number(d.allowance).toLocaleString());
+    return`<div class="row-card" onclick="searchJump('${key}')">
+      <div class="row-card-body">
+        <div class="row-card-name">${d.symbol?`<span style="display:inline-block;background:#f0f0ec;border-radius:4px;padding:0 6px;font-size:13px;color:#555;margin-right:6px">${esc(d.symbol)}</span>`:''}${esc(d.name||'（名称未設定）')}</div>
+        <div class="row-card-sub">${esc(sub.join(' › '))}</div>
+      </div>
+      <div class="row-card-arrow">›</div>
+    </div>`;
+  }).join('');
+}
+function searchJump(key){
+  const {tab,area}=decKey(key);
+  curProduct=tab;curArea=area;
+  document.getElementById('top-search').value='';
+  document.getElementById('search-results').style.display='none';
+  document.getElementById('product-list').style.display='block';
+  showDetail(key);
+}
 function openRateModal(){
   document.getElementById('rate-modal-title').textContent=PRODUCTS[curProduct]+'の料金表';
   document.getElementById('rate-search').value='';
@@ -659,6 +768,105 @@ function importJSON(e){
   };
   r.readAsText(file);e.target.value='';
 }
+
+/* ===== 写真機能 ===== */
+let formPhotos=[];
+let viewingPhotoIdx=-1;
+
+function renderFormPhotos(){
+  const grid=document.getElementById('f-photo-grid');
+  if(!grid)return;
+  let html=formPhotos.map((p,i)=>`<img class="photo-thumb" src="${p}" onclick="openFormPhotoViewer(${i})">`).join('');
+  html+=`<div class="photo-add" onclick="document.getElementById('f-photo-input').click()">+</div>`;
+  grid.innerHTML=html;
+}
+function onPhotoSelected(e){
+  const files=Array.from(e.target.files);
+  files.forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{formPhotos.push(ev.target.result);renderFormPhotos();};
+    reader.readAsDataURL(f);
+  });
+  e.target.value='';
+}
+function openFormPhotoViewer(i){
+  viewingPhotoIdx=i;
+  document.getElementById('photo-viewer-img').src=formPhotos[i];
+  document.getElementById('photo-viewer').classList.add('open');
+  document.getElementById('photo-viewer').dataset.mode='form';
+}
+function onDetailPhotoSelected(e){
+  const files=Array.from(e.target.files);
+  const {tab,area,idx}=decKey(curKey);
+  const d=getList(tab,area)[idx];
+  if(!d.photos)d.photos=[];
+  let loaded=0;
+  files.forEach(f=>{
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      d.photos.push(ev.target.result);
+      loaded++;
+      if(loaded===files.length){saveDB();showDetail(curKey);}
+    };
+    reader.readAsDataURL(f);
+  });
+  e.target.value='';
+}
+function openPhotoViewer(i){
+  const {tab,area,idx}=decKey(curKey);
+  const d=getList(tab,area)[idx];
+  viewingPhotoIdx=i;
+  document.getElementById('photo-viewer-img').src=(d.photos||[])[i]||'';
+  document.getElementById('photo-viewer').classList.add('open');
+  document.getElementById('photo-viewer').dataset.mode='detail';
+}
+function closePhotoViewer(e){
+  if(e&&e.target!==document.getElementById('photo-viewer')&&!e.target.classList.contains('photo-viewer-close'))return;
+  document.getElementById('photo-viewer').classList.remove('open');
+}
+function deleteViewingPhoto(){
+  const mode=document.getElementById('photo-viewer').dataset.mode;
+  if(!confirm('この写真を削除しますか？'))return;
+  document.getElementById('photo-viewer').classList.remove('open');
+  if(mode==='form'){
+    formPhotos.splice(viewingPhotoIdx,1);
+    renderFormPhotos();
+  } else {
+    const {tab,area,idx}=decKey(curKey);
+    const d=getList(tab,area)[idx];
+    if(d.photos)d.photos.splice(viewingPhotoIdx,1);
+    saveDB();showDetail(curKey);
+  }
+}
+
+/* ===== スワイプで戻る ===== */
+(function(){
+  let sx=0,sy=0;
+  const VIEWS=['view-top','view-area','view-dest','view-detail','view-form'];
+  function currentView(){return VIEWS.find(v=>document.getElementById(v).style.display!=='none');}
+  function backAction(){
+    const v=currentView();
+    if(v==='view-area')showTop();
+    else if(v==='view-dest')backFromDest();
+    else if(v==='view-detail')backFromDetail();
+    else if(v==='view-form')cancelForm();
+  }
+  document.addEventListener('touchstart',e=>{
+    sx=e.touches[0].clientX;
+    sy=e.touches[0].clientY;
+  },{passive:true});
+  document.addEventListener('touchend',e=>{
+    const dx=e.changedTouches[0].clientX-sx;
+    const dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*2){
+      if(dx>0){
+        // 右スワイプ → 戻る
+        const v=currentView();
+        if(v&&v!=='view-top')backAction();
+      }
+    }
+  },{passive:true});
+})();
 
 loadDB();showTop();
 </script>
