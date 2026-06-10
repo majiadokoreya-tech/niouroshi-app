@@ -83,6 +83,13 @@ input[type=file]{display:none}
 /* スワイプ */
 .swipe-wrap{position:relative;overflow:hidden}
 .swipe-wrap>div{transition:transform 0.25s ease}
+
+/* エステル製品チェック */
+.ester-products-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.ester-product-check{display:flex;align-items:center;gap:5px;padding:8px 10px;border:1px solid #e0e0dc;border-radius:999px;background:#fafaf8;font-size:14px;font-weight:700;color:#333;cursor:pointer;user-select:none}
+.ester-product-check input{width:18px;height:18px;accent-color:#007aff}
+.ester-product-chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.ester-product-chip{display:inline-flex;align-items:center;justify-content:center;min-width:48px;padding:6px 10px;border-radius:999px;background:#1a1a1a;color:#fff;font-size:13px;font-weight:700}
 </style>
 </head>
 <body>
@@ -167,6 +174,17 @@ input[type=file]{display:none}
       </div>
       <div class="time-labels"><span>始業</span><span>終業</span></div>
     </div>
+    <div class="form-section" id="f-ester-products-sec" style="display:none">
+      <div class="form-label">製品荷卸し</div>
+      <div class="ester-products-row">
+        <label class="ester-product-check"><input type="checkbox" id="f-prod-GAA"> GAA</label>
+        <label class="ester-product-check"><input type="checkbox" id="f-prod-BA"> BA</label>
+        <label class="ester-product-check"><input type="checkbox" id="f-prod-EA"> EA</label>
+        <label class="ester-product-check"><input type="checkbox" id="f-prod-MA"> MA</label>
+        <label class="ester-product-check"><input type="checkbox" id="f-prod-HA"> HA</label>
+      </div>
+      <div class="form-hint">荷卸しがある製品にチェックしてください</div>
+    </div>
     <div class="form-section">
       <div class="form-label">メモ</div>
       <textarea class="form-textarea" id="f-notes" placeholder="注意事項や備考など"></textarea>
@@ -205,6 +223,14 @@ input[type=file]{display:none}
 const PRODUCTS=['エステル','硫酸','ポリマー','塩素'];
 const AREAS=['西関東','東関東','中部','近畿関西','北陸','中国四国','九州'];
 const HAS_AREA=[true,false,true,false];
+
+const ESTER_PRODUCTS=['GAA','BA','EA','MA','HA'];
+function defaultEsterProducts(){return {GAA:false,BA:false,EA:false,MA:false,HA:false};}
+function normalizeEsterProducts(value){const base=defaultEsterProducts();if(value&&typeof value==='object'){ESTER_PRODUCTS.forEach(p=>{base[p]=!!value[p];});}return base;}
+function setEsterProductsToForm(d,tab){const sec=document.getElementById('f-ester-products-sec');if(!sec)return;const isEster=tab===0;sec.style.display=isEster?'block':'none';const values=normalizeEsterProducts(d&&d.esterProducts);ESTER_PRODUCTS.forEach(p=>{const el=document.getElementById('f-prod-'+p);if(el)el.checked=isEster&&!!values[p];});}
+function getEsterProductsFromForm(tab){if(tab!==0)return undefined;const values=defaultEsterProducts();ESTER_PRODUCTS.forEach(p=>{const el=document.getElementById('f-prod-'+p);values[p]=!!(el&&el.checked);});return values;}
+function renderEsterProductsForDetail(d,tab){if(tab!==0)return '';const values=normalizeEsterProducts(d&&d.esterProducts);const checked=ESTER_PRODUCTS.filter(p=>values[p]);if(!checked.length)return '';return '<div class="section"><div class="section-label">製品荷卸し</div><div class="ester-product-chip-row">'+checked.map(p=>'<span class="ester-product-chip">○ '+p+'</span>').join('')+'</div></div>';}
+
 
 const RATE_DATA={
   ester:[
@@ -597,6 +623,7 @@ function showDetail(key){
   if(!d.allowance&&!d.start&&!d.end)html+=`<div style="font-size:13px;color:#ccc">未登録</div>`;
   html+=`</div>`;
   if(d.notes)html+=`<div class="section"><div class="section-label">メモ</div><div class="note-box">${esc(d.notes)}</div></div>`;
+  html+=renderEsterProductsForDetail(d,tab);
   const photos=d.photos||[];
   html+=`<div class="section"><div class="section-label">写真</div><div class="photo-grid">`;
   photos.forEach((p,i)=>{html+=`<img class="photo-thumb" src="${p}" onclick="openPhotoViewer(${i})">`;});
@@ -625,6 +652,7 @@ function showForm(mode){
   document.getElementById('f-name').value=d?d.name||'':'';
   document.getElementById('f-allowance').value=d?d.allowance||'':'';
   document.getElementById('f-notes').value=d?d.notes||'':'';
+  setEsterProductsToForm(d,tab);
   document.getElementById('rate-select-label').textContent='料金表から客先を選ぶ';
   formPhotos=d&&d.photos?[...d.photos]:[];
   renderFormPhotos();
@@ -638,7 +666,9 @@ function cancelForm(){
 function saveDest(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){alert('客先名を入力してください');return;}
+  const saveTab=(editMode&&curKey)?decKey(curKey).tab:curProduct;
   const d={symbol:document.getElementById('f-symbol').value.trim(),name,allowance:document.getElementById('f-allowance').value.trim(),start:document.getElementById('f-start').value,end:document.getElementById('f-end').value,notes:document.getElementById('f-notes').value.trim(),photos:formPhotos};
+  if(saveTab===0)d.esterProducts=getEsterProductsFromForm(saveTab);
   if(editMode&&curKey){
     const k=decKey(curKey);
     const newArea=HAS_AREA[k.tab]?document.getElementById('f-area').value:k.area;
