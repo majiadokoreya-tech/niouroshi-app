@@ -90,6 +90,17 @@ input[type=file]{display:none}
 .ester-product-check input{width:18px;height:18px;accent-color:#007aff}
 .ester-product-chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
 .ester-product-chip{display:inline-flex;align-items:center;justify-content:center;min-width:48px;padding:6px 10px;border-radius:999px;background:#1a1a1a;color:#fff;font-size:13px;font-weight:700}
+
+/* 直近で見た客先 */
+.recent-section{padding:10px 12px 0}
+.recent-title{font-size:12px;font-weight:700;color:#888;letter-spacing:0.04em;margin:4px 4px 8px}
+.recent-list{margin-bottom:4px}
+.recent-card{background:#fff;border:1px solid #e5e5e0;border-radius:12px;padding:12px 14px;margin-bottom:8px;cursor:pointer;display:flex;align-items:center;gap:10px}
+.recent-card:active{background:#f0f0ec}
+.recent-name{font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recent-sub{font-size:12px;color:#999;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.recent-empty{display:none}
+
 </style>
 </head>
 <body>
@@ -100,6 +111,7 @@ input[type=file]{display:none}
     <input id="top-search" type="text" class="form-input" placeholder="客先名・記号で検索..." oninput="renderTopSearch()" autocomplete="off">
   </div>
   <div id="search-results" style="display:none;padding:0 12px"></div>
+  <div id="recent-viewed" class="recent-section"></div>
   <div class="card-list" id="product-list"></div>
   <div class="backup-bar">
     <button class="backup-btn" onclick="exportJSON()">バックアップ保存</button>
@@ -223,6 +235,72 @@ input[type=file]{display:none}
 const PRODUCTS=['エステル','硫酸','ポリマー','塩素'];
 const AREAS=['西関東','東関東','中部','近畿関西','北陸','中国四国','九州'];
 const HAS_AREA=[true,false,true,false];
+
+const RECENT_KEY='niouroshi-recent-v1';
+const RECENT_LIMIT=5;
+
+function loadRecentViewed(){
+  try{
+    const r=localStorage.getItem(RECENT_KEY);
+    const arr=r?JSON.parse(r):[];
+    return Array.isArray(arr)?arr:[];
+  }catch(e){return[];}
+}
+function saveRecentViewed(arr){
+  localStorage.setItem(RECENT_KEY,JSON.stringify(arr.slice(0,RECENT_LIMIT)));
+}
+function addRecentViewed(tab,area,idx){
+  const d=getList(tab,area)[idx];
+  if(!d)return;
+  const item={tab,area,idx,name:d.name||'',symbol:d.symbol||'',allowance:d.allowance||'',start:d.start||'',end:d.end||'',ts:Date.now()};
+  let arr=loadRecentViewed().filter(x=>!(x.tab===tab&&x.area===area&&x.idx===idx));
+  arr.unshift(item);
+  saveRecentViewed(arr);
+}
+function findRecentIndex(item){
+  const list=getList(item.tab,item.area);
+  if(list[item.idx]&&(list[item.idx].name||'')===item.name&&(list[item.idx].symbol||'')===item.symbol)return item.idx;
+  const found=list.findIndex(d=>(d.name||'')===item.name&&(d.symbol||'')===item.symbol);
+  return found;
+}
+function openRecentViewed(n){
+  const arr=loadRecentViewed();
+  const item=arr[n];
+  if(!item)return;
+  const idx=findRecentIndex(item);
+  if(idx<0){alert('この客先は見つかりませんでした');return;}
+  curProduct=item.tab;
+  curArea=item.area;
+  showDetail(encKey(item.tab,item.area,idx));
+}
+function renderRecentViewed(){
+  const el=document.getElementById('recent-viewed');
+  if(!el)return;
+  const valid=[];
+  loadRecentViewed().forEach(item=>{
+    const idx=findRecentIndex(item);
+    if(idx>=0){
+      const d=getList(item.tab,item.area)[idx];
+      valid.push({...item,idx,name:d.name||item.name,symbol:d.symbol||item.symbol,allowance:d.allowance||item.allowance,start:d.start||item.start,end:d.end||item.end});
+    }
+  });
+  saveRecentViewed(valid);
+  if(!valid.length){el.innerHTML='';return;}
+  el.innerHTML='<div class="recent-title">直近で見た客先</div><div class="recent-list">'+valid.map((item,i)=>{
+    const sub=[PRODUCTS[item.tab]];
+    if(item.area)sub.push(item.area);
+    if(item.allowance)sub.push('¥'+Number(item.allowance).toLocaleString());
+    if(item.start||item.end)sub.push([item.start,item.end].filter(Boolean).join(' 〜 '));
+    return `<div class="recent-card" onclick="openRecentViewed(${i})">
+      <div class="row-card-body">
+        <div class="recent-name">${item.symbol?`<span style="display:inline-block;background:#f0f0ec;border-radius:4px;padding:0 6px;font-size:13px;color:#555;margin-right:6px">${esc(item.symbol)}</span>`:''}${esc(item.name||'（名称未設定）')}</div>
+        <div class="recent-sub">${esc(sub.join(' › '))}</div>
+      </div>
+      <div class="row-card-arrow">›</div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
 
 const ESTER_PRODUCTS=['GAA','BA','EA','MA','HA'];
 function defaultEsterProducts(){return {GAA:false,BA:false,EA:false,MA:false,HA:false};}
@@ -476,6 +554,7 @@ function showTop(){
   document.getElementById('top-search').value='';
   document.getElementById('search-results').style.display='none';
   document.getElementById('product-list').style.display='block';
+  renderRecentViewed();
   document.getElementById('product-list').innerHTML=PRODUCTS.map((p,i)=>`
     <div class="row-card" onclick="showArea(${i})">
       <div class="row-card-body"><div class="row-card-name">${p}</div><div class="row-card-sub">${totalCount(i)}件登録</div></div>
@@ -610,6 +689,7 @@ function showDetail(key){
   curKey=key;
   const {tab,area,idx}=decKey(key);
   const d=getList(tab,area)[idx];if(!d)return;
+  addRecentViewed(tab,area,idx);
   document.getElementById('detail-title').textContent=(d.symbol?`[${d.symbol}] `:'')+( d.name||'（名称未設定）');
   let html='<div style="margin-top:8px">';
   html+=`<div class="section"><div class="section-label">基本情報</div>`;
@@ -704,7 +784,8 @@ function renderTopSearch(){
   const q=document.getElementById('top-search').value.trim().toLowerCase();
   const sr=document.getElementById('search-results');
   const pl=document.getElementById('product-list');
-  if(!q){sr.style.display='none';sr.innerHTML='';pl.style.display='block';return;}
+  if(!q){sr.style.display='none';sr.innerHTML='';pl.style.display='block';renderRecentViewed();return;}
+  document.getElementById('recent-viewed').innerHTML='';
   pl.style.display='none';
   sr.style.display='block';
   const results=[];
