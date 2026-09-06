@@ -864,11 +864,58 @@ function selectRate(idx){
   closeRateModal();
 }
 
-function exportJSON(){
+const AUTO_BACKUP_KEY='niouroshi-auto-backup-date-v1';
+
+function getBackupDateKey(){
+  const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function downloadBackupFile(){
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);const a=document.createElement('a');const d=new Date();
-  a.href=url;a.download=`niouroshi_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
-  a.click();URL.revokeObjectURL(url);
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const d=new Date();
+  a.href=url;
+  a.download=`niouroshi_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function exportJSON(){
+  downloadBackupFile();
+}
+function runDailyBackup(){
+  const today=getBackupDateKey();
+  if(localStorage.getItem(AUTO_BACKUP_KEY)===today)return true;
+  try{
+    downloadBackupFile();
+    localStorage.setItem(AUTO_BACKUP_KEY,today);
+    return true;
+  }catch(e){
+    console.warn('自動バックアップに失敗しました',e);
+    return false;
+  }
+}
+function setupDailyBackup(){
+  const today=getBackupDateKey();
+  if(localStorage.getItem(AUTO_BACKUP_KEY)===today)return;
+
+  // モバイルブラウザは画面表示直後の自動ダウンロードを止める場合があるため、
+  // その日の最初のタップを利用して確実にバックアップを保存する。
+  let done=false;
+  const once=()=>{
+    if(done)return;
+    done=runDailyBackup();
+    if(done){
+      document.removeEventListener('pointerdown',once,true);
+      document.removeEventListener('touchstart',once,true);
+      document.removeEventListener('keydown',once,true);
+    }
+  };
+  document.addEventListener('pointerdown',once,true);
+  document.addEventListener('touchstart',once,true);
+  document.addEventListener('keydown',once,true);
 }
 function importJSON(e){
   const file=e.target.files[0];if(!file)return;
@@ -979,7 +1026,7 @@ function deleteViewingPhoto(){
   },{passive:true});
 })();
 
-loadDB();showTop();
+loadDB();showTop();setupDailyBackup();
 </script>
 </body>
 </html>
