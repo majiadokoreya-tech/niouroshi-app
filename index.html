@@ -870,26 +870,30 @@ function getBackupDateKey(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-function downloadBackupFile(){
+function downloadBackupFile(mode='manual'){
   const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   const d=new Date();
+  const date=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const time=`${String(d.getHours()).padStart(2,'0')}${String(d.getMinutes()).padStart(2,'0')}`;
   a.href=url;
-  a.download=`niouroshi_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  a.download=mode==='auto'
+    ? `客先管理アプリ_自動バックアップ_${date}.json`
+    : `客先管理アプリ_手動バックアップ_${date}_${time}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function exportJSON(){
-  downloadBackupFile();
+  downloadBackupFile('manual');
 }
 function runDailyBackup(){
   const today=getBackupDateKey();
   if(localStorage.getItem(AUTO_BACKUP_KEY)===today)return true;
   try{
-    downloadBackupFile();
+    downloadBackupFile('auto');
     localStorage.setItem(AUTO_BACKUP_KEY,today);
     return true;
   }catch(e){
