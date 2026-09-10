@@ -232,9 +232,9 @@ input[type=file]{display:none}
 </div>
 
 <script>
-const PRODUCTS=['エステル','硫酸','ポリマー','塩素'];
+const PRODUCTS=['エステル','硫酸','ポリマー','塩素','アンモニア'];
 const AREAS=['西関東','東関東','中部','近畿関西','北陸','中国四国','九州'];
-const HAS_AREA=[true,false,true,false];
+const HAS_AREA=[true,false,true,false,false];
 
 const RECENT_KEY='niouroshi-recent-v1';
 const RECENT_LIMIT=3;
@@ -474,9 +474,10 @@ const RATE_DATA={
     {name:'田中化学研究所 福井工場（濃硫酸）',start:'18:30',end:'15:30',allowance:10600},
     {name:'GSユアサ 群馬（濃硫酸）',start:'12:30',end:'19:00',allowance:21600},
   ],
+  ammonia:[],
 };
 
-let db={ester:{},sulfuric:[],polymer:{},chlorine:[]};
+let db={ester:{},sulfuric:[],polymer:{},chlorine:[],ammonia:[]};
 let curProduct=0,curArea=null,curKey=null,editMode=false;
 
 function initDB(){
@@ -486,6 +487,7 @@ function initDB(){
   db.polymerAreas.forEach(a=>{if(!db.polymer[a])db.polymer[a]=[];});
   if(!Array.isArray(db.sulfuric))db.sulfuric=[];
   if(!Array.isArray(db.chlorine))db.chlorine=[];
+  if(!Array.isArray(db.ammonia))db.ammonia=[];
 }
 function loadDB(){
   try{const r=localStorage.getItem('niouroshi-v2');if(r)db=JSON.parse(r);}catch(e){}
@@ -497,6 +499,7 @@ function getList(tab,area){
   if(tab===1)return db.sulfuric;
   if(tab===2)return db.polymer[area]||[];
   if(tab===3)return db.chlorine;
+  if(tab===4)return db.ammonia;
   return[];
 }
 function setList(tab,area,arr){
@@ -504,6 +507,7 @@ function setList(tab,area,arr){
   else if(tab===1)db.sulfuric=arr;
   else if(tab===2)db.polymer[area]=arr;
   else if(tab===3)db.chlorine=arr;
+  else if(tab===4)db.ammonia=arr;
 }
 function totalCount(tab){
   if(!HAS_AREA[tab])return getList(tab,null).length;
@@ -778,7 +782,7 @@ function deleteDest(){
   curKey=null;curArea=area;curProduct=tab;hideAll();showDest(area);
 }
 
-function getRateKey(){return['ester','sulfuric','polymer','chlorine'][curProduct]||'ester';}
+function getRateKey(){return['ester','sulfuric','polymer','chlorine','ammonia'][curProduct]||'ester';}
 
 function renderTopSearch(){
   const q=document.getElementById('top-search').value.trim().toLowerCase();
