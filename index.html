@@ -554,6 +554,16 @@ function loadDB(){
     if(!isValidDBRoot(parsed))throw new Error('invalid db root');
     db=parsed;
     initDB();
+
+    // 旧バージョンで作成された写真込みの丸ごと復旧コピーは、
+    // 正常な本体データを確認できた時点で削除して保存容量を解放する。
+    try{
+      if(localStorage.getItem(DB_RECOVERY_KEY)!==null){
+        localStorage.removeItem(DB_RECOVERY_KEY);
+      }
+    }catch(cleanupError){
+      console.warn('古い復旧コピーの削除に失敗しました',cleanupError);
+    }
   }catch(e){
     const recovery=localStorage.getItem(DB_RECOVERY_KEY);
     if(recovery){
@@ -563,6 +573,8 @@ function loadDB(){
         db=parsedRecovery;
         initDB();
         localStorage.setItem(DB_KEY,JSON.stringify(db));
+        // 本体への復旧が完了したら、容量を圧迫する旧復旧コピーは削除する。
+        try{localStorage.removeItem(DB_RECOVERY_KEY);}catch(cleanupError){}
         alert('客先データの読み込み異常を検知したため、直前の安全バックアップから自動復旧しました。');
         return;
       }catch(recoveryError){}
