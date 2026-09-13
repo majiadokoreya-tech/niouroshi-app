@@ -802,9 +802,11 @@ function saveDest(){
       const list=getList(k.tab,k.area);list[k.idx]=d;setList(k.tab,k.area,list);saveDB();
       curKey=encKey(k.tab,k.area,k.idx);
     }
-    hideAll();showDetail(curKey);
+    // 保存後は保存前の客先一覧画面へ戻る
+    hideAll();showDest(curArea);
   } else {
     const list=getList(curProduct,curArea);list.push(d);setList(curProduct,curArea,list);saveDB();
+    // 新規登録時も保存後は客先一覧画面へ戻る
     hideAll();showDest(curArea);
   }
 }
