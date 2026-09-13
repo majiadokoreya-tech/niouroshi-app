@@ -578,22 +578,28 @@ function saveDB(options={}){
     alert('データ保護中のため保存できません。バックアップJSONを読み込んで復旧してください。');
     return false;
   }
+
+  let previousRaw=null;
   try{
     const newRaw=JSON.stringify(db);
     const newParsed=JSON.parse(newRaw);
     if(!isValidDBRoot(newParsed))throw new Error('invalid new db');
 
-    const currentRaw=localStorage.getItem(DB_KEY);
+    previousRaw=localStorage.getItem(DB_KEY);
     let currentCount=0;
-    if(currentRaw){
+
+    if(previousRaw){
       try{
-        const currentParsed=JSON.parse(currentRaw);
+        const currentParsed=JSON.parse(previousRaw);
         if(isValidDBRoot(currentParsed)){
           currentCount=countCustomersInDB(currentParsed);
-          // 書き込み直前の正常データを必ず1世代退避
-          localStorage.setItem(DB_RECOVERY_KEY,currentRaw);
         }
-      }catch(e){}
+      }catch(e){
+        // 既存保存データが壊れている場合は上書きを止める
+        dbWriteLocked=true;
+        alert('保存済み客先データの異常を検知しました。上書きを防止したため、バックアップから復元してください。');
+        return false;
+      }
     }
 
     const newCount=countCustomersInDB(newParsed);
@@ -602,17 +608,42 @@ function saveDB(options={}){
       return false;
     }
 
+    // localStorage.setItem は成功するまで既存値を置き換えないため、
+    // 写真入りDBを丸ごと二重保存せず、容量不足時も元データを維持する。
     localStorage.setItem(DB_KEY,newRaw);
 
-    // 書き込み後に同じ内容が保存されたか検証
+    // 書き込み後に内容を検証
     const verifyRaw=localStorage.getItem(DB_KEY);
     if(verifyRaw!==newRaw)throw new Error('save verify failed');
+
     const verifyParsed=JSON.parse(verifyRaw);
     if(!isValidDBRoot(verifyParsed))throw new Error('verify parse failed');
+
     return true;
   }catch(e){
     console.error('saveDB failed',e);
-    alert('客先データの保存に失敗しました。画面を閉じず、バックアップを確認してください。');
+
+    // 万一、書き込み後検証で失敗した場合だけ元データへ戻す
+    if(previousRaw!==null){
+      try{
+        localStorage.setItem(DB_KEY,previousRaw);
+      }catch(restoreError){
+        console.error('restore failed',restoreError);
+      }
+    }
+
+    const isQuota=e&&(
+      e.name==='QuotaExceededError' ||
+      e.name==='NS_ERROR_DOM_QUOTA_REACHED' ||
+      e.code===22 ||
+      e.code===1014
+    );
+
+    if(isQuota){
+      alert('保存容量がいっぱいです。写真を減らすか、不要な客先写真を削除してから再度保存してください。既存の客先データは消えていません。');
+    }else{
+      alert('客先データの保存に失敗しました。既存データは保護されています。画面を閉じず、もう一度お試しください。');
+    }
     return false;
   }
 }
