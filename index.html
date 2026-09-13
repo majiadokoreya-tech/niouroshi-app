@@ -510,7 +510,10 @@ const RATE_DATA={
   ],
 };
 
+const DB_KEY='niouroshi-v2';
+const DB_RECOVERY_KEY='niouroshi-v2-recovery-v1';
 let db={ester:{},sulfuric:[],polymer:{},chlorine:[],ammonia:[]};
+let dbWriteLocked=false;
 let curProduct=0,curArea=null,curKey=null,editMode=false;
 
 function initDB(){
@@ -522,11 +525,97 @@ function initDB(){
   if(!Array.isArray(db.chlorine))db.chlorine=[];
   if(!Array.isArray(db.ammonia))db.ammonia=[];
 }
-function loadDB(){
-  try{const r=localStorage.getItem('niouroshi-v2');if(r)db=JSON.parse(r);}catch(e){}
-  initDB();
+function isValidDBRoot(v){
+  return !!v&&typeof v==='object'&&!Array.isArray(v);
 }
-function saveDB(){localStorage.setItem('niouroshi-v2',JSON.stringify(db));}
+function countCustomersInDB(v){
+  if(!isValidDBRoot(v))return 0;
+  let count=0;
+  if(v.ester&&typeof v.ester==='object'){
+    Object.values(v.ester).forEach(a=>{if(Array.isArray(a))count+=a.length;});
+  }
+  if(Array.isArray(v.sulfuric))count+=v.sulfuric.length;
+  if(v.polymer&&typeof v.polymer==='object'){
+    Object.values(v.polymer).forEach(a=>{if(Array.isArray(a))count+=a.length;});
+  }
+  if(Array.isArray(v.chlorine))count+=v.chlorine.length;
+  if(Array.isArray(v.ammonia))count+=v.ammonia.length;
+  return count;
+}
+function loadDB(){
+  dbWriteLocked=false;
+  const raw=localStorage.getItem(DB_KEY);
+  if(!raw){
+    initDB();
+    return;
+  }
+  try{
+    const parsed=JSON.parse(raw);
+    if(!isValidDBRoot(parsed))throw new Error('invalid db root');
+    db=parsed;
+    initDB();
+  }catch(e){
+    const recovery=localStorage.getItem(DB_RECOVERY_KEY);
+    if(recovery){
+      try{
+        const parsedRecovery=JSON.parse(recovery);
+        if(!isValidDBRoot(parsedRecovery))throw new Error('invalid recovery root');
+        db=parsedRecovery;
+        initDB();
+        localStorage.setItem(DB_KEY,JSON.stringify(db));
+        alert('客先データの読み込み異常を検知したため、直前の安全バックアップから自動復旧しました。');
+        return;
+      }catch(recoveryError){}
+    }
+    db={ester:{},sulfuric:[],polymer:{},chlorine:[],ammonia:[]};
+    initDB();
+    dbWriteLocked=true;
+    alert('客先データの読み込みに失敗しました。データ保護のため保存を停止しています。バックアップJSONから復元してください。');
+  }
+}
+function saveDB(options={}){
+  if(dbWriteLocked){
+    alert('データ保護中のため保存できません。バックアップJSONを読み込んで復旧してください。');
+    return false;
+  }
+  try{
+    const newRaw=JSON.stringify(db);
+    const newParsed=JSON.parse(newRaw);
+    if(!isValidDBRoot(newParsed))throw new Error('invalid new db');
+
+    const currentRaw=localStorage.getItem(DB_KEY);
+    let currentCount=0;
+    if(currentRaw){
+      try{
+        const currentParsed=JSON.parse(currentRaw);
+        if(isValidDBRoot(currentParsed)){
+          currentCount=countCustomersInDB(currentParsed);
+          // 書き込み直前の正常データを必ず1世代退避
+          localStorage.setItem(DB_RECOVERY_KEY,currentRaw);
+        }
+      }catch(e){}
+    }
+
+    const newCount=countCustomersInDB(newParsed);
+    if(!options.allowMassClear&&currentCount>=3&&newCount===0){
+      alert('全客先が0件になる異常な保存を検知したため、保存を中止しました。既存データは保護されています。');
+      return false;
+    }
+
+    localStorage.setItem(DB_KEY,newRaw);
+
+    // 書き込み後に同じ内容が保存されたか検証
+    const verifyRaw=localStorage.getItem(DB_KEY);
+    if(verifyRaw!==newRaw)throw new Error('save verify failed');
+    const verifyParsed=JSON.parse(verifyRaw);
+    if(!isValidDBRoot(verifyParsed))throw new Error('verify parse failed');
+    return true;
+  }catch(e){
+    console.error('saveDB failed',e);
+    alert('客先データの保存に失敗しました。画面を閉じず、バックアップを確認してください。');
+    return false;
+  }
+}
 function getList(tab,area){
   if(tab===0)return db.ester[area]||[];
   if(tab===1)return db.sulfuric;
@@ -783,38 +872,96 @@ function cancelForm(){
 function saveDest(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){alert('客先名を入力してください');return;}
+
   const saveTab=(editMode&&curKey)?decKey(curKey).tab:curProduct;
-  const d={symbol:document.getElementById('f-symbol').value.trim(),name,allowance:document.getElementById('f-allowance').value.trim(),start:document.getElementById('f-start').value,end:document.getElementById('f-end').value,notes:document.getElementById('f-notes').value.trim(),photos:formPhotos};
+  const d={
+    symbol:document.getElementById('f-symbol').value.trim(),
+    name,
+    allowance:document.getElementById('f-allowance').value.trim(),
+    start:document.getElementById('f-start').value,
+    end:document.getElementById('f-end').value,
+    notes:document.getElementById('f-notes').value.trim(),
+    photos:formPhotos
+  };
   if(saveTab===0)d.esterProducts=getEsterProductsFromForm(saveTab);
+
   if(editMode&&curKey){
     const k=decKey(curKey);
     const newArea=HAS_AREA[k.tab]?document.getElementById('f-area').value:k.area;
+
     if(newArea!==k.area){
-      // エリア変更：旧エリアから削除して新エリアに追加
       const oldList=getList(k.tab,k.area);
-      oldList.splice(k.idx,1);setList(k.tab,k.area,oldList);
+      const original=oldList[k.idx];
+      oldList.splice(k.idx,1);
+      setList(k.tab,k.area,oldList);
+
       const newList=getList(k.tab,newArea);
-      newList.push(d);setList(k.tab,newArea,newList);
-      saveDB();
+      newList.push(d);
+      setList(k.tab,newArea,newList);
+
+      if(!saveDB()){
+        // 保存失敗時は画面上のDBも元へ戻す
+        newList.pop();
+        setList(k.tab,newArea,newList);
+        oldList.splice(k.idx,0,original);
+        setList(k.tab,k.area,oldList);
+        return;
+      }
+
+      curProduct=k.tab;
       curArea=newArea;
       curKey=encKey(k.tab,newArea,newList.length-1);
-    } else {
-      const list=getList(k.tab,k.area);list[k.idx]=d;setList(k.tab,k.area,list);saveDB();
+    }else{
+      const list=getList(k.tab,k.area);
+      const original=list[k.idx];
+      list[k.idx]=d;
+      setList(k.tab,k.area,list);
+
+      if(!saveDB()){
+        list[k.idx]=original;
+        setList(k.tab,k.area,list);
+        return;
+      }
+
+      curProduct=k.tab;
+      curArea=k.area;
       curKey=encKey(k.tab,k.area,k.idx);
     }
-    // 保存後は保存前の客先一覧画面へ戻る
-    hideAll();showDest(curArea);
-  } else {
-    const list=getList(curProduct,curArea);list.push(d);setList(curProduct,curArea,list);saveDB();
-    // 新規登録時も保存後は客先一覧画面へ戻る
-    hideAll();showDest(curArea);
+
+    // 編集保存後は必ず客先一覧へ戻る
+    showDest(curArea);
+    return;
   }
+
+  const list=getList(curProduct,curArea);
+  list.push(d);
+  setList(curProduct,curArea,list);
+
+  if(!saveDB()){
+    list.pop();
+    setList(curProduct,curArea,list);
+    return;
+  }
+
+  // 新規保存後も必ず客先一覧へ戻る
+  showDest(curArea);
 }
 function deleteDest(){
   if(!confirm('この客先を削除しますか？'))return;
-  const {tab,area,idx}=decKey(curKey);const list=getList(tab,area);
-  list.splice(idx,1);setList(tab,area,list);saveDB();
-  curKey=null;curArea=area;curProduct=tab;hideAll();showDest(area);
+  const {tab,area,idx}=decKey(curKey);
+  const list=getList(tab,area);
+  const removed=list[idx];
+  list.splice(idx,1);
+  setList(tab,area,list);
+  if(!saveDB()){
+    list.splice(idx,0,removed);
+    setList(tab,area,list);
+    return;
+  }
+  curKey=null;
+  curArea=area;
+  curProduct=tab;
+  showDest(area);
 }
 
 function getRateKey(){return['ester','sulfuric','polymer','chlorine','ammonia'][curProduct]||'ester';}
@@ -964,8 +1111,26 @@ function importJSON(e){
   const file=e.target.files[0];if(!file)return;
   const r=new FileReader();
   r.onload=ev=>{
-    try{const parsed=JSON.parse(ev.target.result);if(confirm('現在のデータを上書きしますか？')){db=parsed;initDB();saveDB();showTop();alert('読み込み完了しました');}}
-    catch{alert('ファイルの読み込みに失敗しました');}
+    try{
+      const parsed=JSON.parse(ev.target.result);
+      if(!isValidDBRoot(parsed))throw new Error('invalid backup');
+      if(confirm('現在のデータを上書きして、このバックアップから復元しますか？')){
+        const oldDb=db;
+        const oldLocked=dbWriteLocked;
+        db=parsed;
+        initDB();
+        dbWriteLocked=false;
+        if(saveDB({allowMassClear:true})){
+          showTop();
+          alert('バックアップから復元しました');
+        }else{
+          db=oldDb;
+          dbWriteLocked=oldLocked;
+        }
+      }
+    }catch{
+      alert('ファイルの読み込みに失敗しました。正しいバックアップJSONを選んでください。');
+    }
   };
   r.readAsText(file);e.target.value='';
 }
