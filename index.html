@@ -101,6 +101,15 @@ input[type=file]{display:none}
 .recent-sub{font-size:12px;color:#999;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .recent-empty{display:none}
 
+
+.ester-unload-row{display:grid;grid-template-columns:72px 1fr 1fr;gap:8px;align-items:center;margin:10px 0}
+.ester-unload-name{font-weight:700;font-size:16px}
+.ester-unload-input{width:100%;box-sizing:border-box;border:1px solid #d7d7d2;border-radius:10px;padding:11px 10px;font-size:16px;background:#fff}
+.ester-unload-head{display:grid;grid-template-columns:72px 1fr 1fr;gap:8px;color:#999;font-size:12px;text-align:center;margin-bottom:4px}
+.ester-unload-detail{display:grid;grid-template-columns:70px 1fr 1fr;gap:8px;padding:9px 0;border-bottom:1px solid #eee;align-items:center}
+.ester-unload-detail:last-child{border-bottom:0}
+.ester-unload-detail-name{font-weight:700}
+.ester-unload-detail-val{text-align:right}
 </style>
 </head>
 <body>
@@ -188,14 +197,8 @@ input[type=file]{display:none}
     </div>
     <div class="form-section" id="f-ester-products-sec" style="display:none">
       <div class="form-label">製品荷卸し</div>
-      <div class="ester-products-row">
-        <label class="ester-product-check"><input type="checkbox" id="f-prod-GAA"> GAA</label>
-        <label class="ester-product-check"><input type="checkbox" id="f-prod-BA"> BA</label>
-        <label class="ester-product-check"><input type="checkbox" id="f-prod-EA"> EA</label>
-        <label class="ester-product-check"><input type="checkbox" id="f-prod-MA"> MA</label>
-        <label class="ester-product-check"><input type="checkbox" id="f-prod-HA"> HA</label>
-      </div>
-      <div class="form-hint">荷卸しがある製品にチェックしてください</div>
+      <div id="f-ester-products-inputs"></div>
+      <div class="form-hint">荷卸しした品目だけ、トン数と荷卸し時間を入力してください</div>
     </div>
     <div class="form-section">
       <div class="form-label">メモ</div>
@@ -302,12 +305,71 @@ function renderRecentViewed(){
 }
 
 
-const ESTER_PRODUCTS=['GAA','BA','EA','MA','HA'];
-function defaultEsterProducts(){return {GAA:false,BA:false,EA:false,MA:false,HA:false};}
-function normalizeEsterProducts(value){const base=defaultEsterProducts();if(value&&typeof value==='object'){ESTER_PRODUCTS.forEach(p=>{base[p]=!!value[p];});}return base;}
-function setEsterProductsToForm(d,tab){const sec=document.getElementById('f-ester-products-sec');if(!sec)return;const isEster=tab===0;sec.style.display=isEster?'block':'none';const values=normalizeEsterProducts(d&&d.esterProducts);ESTER_PRODUCTS.forEach(p=>{const el=document.getElementById('f-prod-'+p);if(el)el.checked=isEster&&!!values[p];});}
-function getEsterProductsFromForm(tab){if(tab!==0)return undefined;const values=defaultEsterProducts();ESTER_PRODUCTS.forEach(p=>{const el=document.getElementById('f-prod-'+p);values[p]=!!(el&&el.checked);});return values;}
-function renderEsterProductsForDetail(d,tab){if(tab!==0)return '';const values=normalizeEsterProducts(d&&d.esterProducts);const checked=ESTER_PRODUCTS.filter(p=>values[p]);if(!checked.length)return '';return '<div class="section"><div class="section-label">製品荷卸し</div><div class="ester-product-chip-row">'+checked.map(p=>'<span class="ester-product-chip">○ '+p+'</span>').join('')+'</div></div>';}
+const ESTER_PRODUCTS=['BA','EA','MA','HA','80%','98%','C1'];
+function defaultEsterProducts(){
+  const r={};
+  ESTER_PRODUCTS.forEach(p=>r[p]={tons:'',time:''});
+  return r;
+}
+function normalizeEsterProducts(value){
+  const base=defaultEsterProducts();
+  if(value&&typeof value==='object'){
+    ESTER_PRODUCTS.forEach(p=>{
+      const v=value[p];
+      if(v&&typeof v==='object'){
+        base[p]={tons:String(v.tons??''),time:String(v.time??'')};
+      }else if(v===true){
+        // 旧チェック式データは品目名だけ残し、数値は未入力として移行
+        base[p]={tons:'',time:''};
+      }
+    });
+  }
+  return base;
+}
+function esterInputId(prefix,p){
+  return prefix+'-'+p.replace(/[^A-Za-z0-9]/g,c=>'x'+c.charCodeAt(0).toString(16));
+}
+function setEsterProductsToForm(d,tab){
+  const sec=document.getElementById('f-ester-products-sec');
+  const box=document.getElementById('f-ester-products-inputs');
+  if(!sec||!box)return;
+  const isEster=tab===0;
+  sec.style.display=isEster?'block':'none';
+  if(!isEster){box.innerHTML='';return;}
+  const values=normalizeEsterProducts(d&&d.esterProducts);
+  box.innerHTML='<div class="ester-unload-head"><span>品目</span><span>トン数</span><span>荷卸し時間</span></div>'+
+    ESTER_PRODUCTS.map(p=>{
+      const tonsId=esterInputId('f-tons',p);
+      const timeId=esterInputId('f-utime',p);
+      return `<div class="ester-unload-row">
+        <div class="ester-unload-name">${esc(p)}</div>
+        <input class="ester-unload-input" id="${tonsId}" type="number" inputmode="decimal" step="0.01" min="0" placeholder="t" value="${esc(values[p].tons)}">
+        <input class="ester-unload-input" id="${timeId}" type="text" inputmode="numeric" placeholder="例 40分" value="${esc(values[p].time)}">
+      </div>`;
+    }).join('');
+}
+function getEsterProductsFromForm(tab){
+  if(tab!==0)return undefined;
+  const values=defaultEsterProducts();
+  ESTER_PRODUCTS.forEach(p=>{
+    const tons=document.getElementById(esterInputId('f-tons',p));
+    const time=document.getElementById(esterInputId('f-utime',p));
+    values[p]={tons:tons?tons.value.trim():'',time:time?time.value.trim():''};
+  });
+  return values;
+}
+function renderEsterProductsForDetail(d,tab){
+  if(tab!==0)return '';
+  const values=normalizeEsterProducts(d&&d.esterProducts);
+  const entered=ESTER_PRODUCTS.filter(p=>values[p].tons||values[p].time);
+  if(!entered.length)return '';
+  return '<div class="section"><div class="section-label">製品荷卸し</div>'+
+    entered.map(p=>`<div class="ester-unload-detail">
+      <div class="ester-unload-detail-name">${esc(p)}</div>
+      <div class="ester-unload-detail-val">${values[p].tons?esc(values[p].tons)+' t':'--'}</div>
+      <div class="ester-unload-detail-val">${values[p].time?esc(values[p].time):'--'}</div>
+    </div>`).join('')+'</div>';
+}
 
 
 const RATE_DATA={
@@ -512,8 +574,13 @@ const RATE_DATA={
 
 const DB_KEY='niouroshi-v2';
 const DB_RECOVERY_KEY='niouroshi-v2-recovery-v1';
+const PHOTO_DB_NAME='niouroshi-photos-v1';
+const PHOTO_DB_VERSION=1;
+const PHOTO_STORE='customerPhotos';
 let db={ester:{},sulfuric:[],polymer:{},chlorine:[],ammonia:[]};
 let dbWriteLocked=false;
+let photoStorageReady=false;
+let photoDBPromise=null;
 let curProduct=0,curArea=null,curKey=null,editMode=false;
 
 function initDB(){
@@ -541,6 +608,131 @@ function countCustomersInDB(v){
   if(Array.isArray(v.chlorine))count+=v.chlorine.length;
   if(Array.isArray(v.ammonia))count+=v.ammonia.length;
   return count;
+}
+
+function forEachCustomer(root,fn){
+  if(!isValidDBRoot(root))return;
+  if(root.ester&&typeof root.ester==='object'){
+    Object.values(root.ester).forEach(list=>{if(Array.isArray(list))list.forEach(fn);});
+  }
+  if(Array.isArray(root.sulfuric))root.sulfuric.forEach(fn);
+  if(root.polymer&&typeof root.polymer==='object'){
+    Object.values(root.polymer).forEach(list=>{if(Array.isArray(list))list.forEach(fn);});
+  }
+  if(Array.isArray(root.chlorine))root.chlorine.forEach(fn);
+  if(Array.isArray(root.ammonia))root.ammonia.forEach(fn);
+}
+function makePhotoId(){
+  if(window.crypto&&typeof window.crypto.randomUUID==='function')return window.crypto.randomUUID();
+  return 'p_'+Date.now()+'_'+Math.random().toString(36).slice(2);
+}
+function ensurePhotoId(d){
+  if(d&&!d.photoId)d.photoId=makePhotoId();
+  return d?d.photoId:null;
+}
+function openPhotoDB(){
+  if(photoDBPromise)return photoDBPromise;
+  photoDBPromise=new Promise((resolve,reject)=>{
+    if(!('indexedDB' in window)){reject(new Error('IndexedDB is not supported'));return;}
+    const req=indexedDB.open(PHOTO_DB_NAME,PHOTO_DB_VERSION);
+    req.onupgradeneeded=()=>{
+      const idb=req.result;
+      if(!idb.objectStoreNames.contains(PHOTO_STORE)){
+        idb.createObjectStore(PHOTO_STORE,{keyPath:'id'});
+      }
+    };
+    req.onsuccess=()=>resolve(req.result);
+    req.onerror=()=>reject(req.error||new Error('IndexedDB open failed'));
+    req.onblocked=()=>reject(new Error('IndexedDB open blocked'));
+  });
+  return photoDBPromise;
+}
+async function putPhotoRecord(id,photos){
+  const idb=await openPhotoDB();
+  return new Promise((resolve,reject)=>{
+    const tx=idb.transaction(PHOTO_STORE,'readwrite');
+    tx.objectStore(PHOTO_STORE).put({id,photos:Array.isArray(photos)?photos:[]});
+    tx.oncomplete=()=>resolve(true);
+    tx.onerror=()=>reject(tx.error||new Error('photo save failed'));
+    tx.onabort=()=>reject(tx.error||new Error('photo save aborted'));
+  });
+}
+async function getPhotoRecord(id){
+  if(!id)return [];
+  const idb=await openPhotoDB();
+  return new Promise((resolve,reject)=>{
+    const tx=idb.transaction(PHOTO_STORE,'readonly');
+    const req=tx.objectStore(PHOTO_STORE).get(id);
+    req.onsuccess=()=>resolve(req.result&&Array.isArray(req.result.photos)?req.result.photos:[]);
+    req.onerror=()=>reject(req.error||new Error('photo load failed'));
+  });
+}
+async function deletePhotoRecord(id){
+  if(!id)return true;
+  const idb=await openPhotoDB();
+  return new Promise((resolve,reject)=>{
+    const tx=idb.transaction(PHOTO_STORE,'readwrite');
+    tx.objectStore(PHOTO_STORE).delete(id);
+    tx.oncomplete=()=>resolve(true);
+    tx.onerror=()=>reject(tx.error||new Error('photo delete failed'));
+    tx.onabort=()=>reject(tx.error||new Error('photo delete aborted'));
+  });
+}
+async function loadCustomerPhotos(d){
+  if(!d)return [];
+  if(Array.isArray(d.photos))return d.photos;
+  if(!d.photoId){d.photos=[];return d.photos;}
+  d.photos=await getPhotoRecord(d.photoId);
+  return d.photos;
+}
+async function saveCustomerPhotos(d){
+  if(!d)return false;
+  const id=ensurePhotoId(d);
+  await putPhotoRecord(id,Array.isArray(d.photos)?d.photos:[]);
+  return true;
+}
+function storageSnapshotWithoutPhotos(root){
+  return JSON.parse(JSON.stringify(root,(key,value)=>key==='photos'?undefined:value));
+}
+async function migrateLegacyPhotos(){
+  try{
+    await openPhotoDB();
+    photoStorageReady=true;
+    let changed=false;
+    const jobs=[];
+    forEachCustomer(db,d=>{
+      const hadPhotoId=!!d.photoId;
+      ensurePhotoId(d);
+      if(!hadPhotoId)changed=true;
+      if(Array.isArray(d.photos)){
+        jobs.push(putPhotoRecord(d.photoId,[...d.photos]));
+        changed=true;
+      }
+    });
+    if(jobs.length)await Promise.all(jobs);
+    if(changed&&!saveDB({allowMassClear:true,silent:true})){
+      throw new Error('metadata save failed after photo migration');
+    }
+    return true;
+  }catch(e){
+    console.error('photo migration failed',e);
+    photoStorageReady=false;
+    dbWriteLocked=true;
+    alert('写真保存領域の初期化に失敗しました。既存データ保護のため保存を停止しています。ページを再読み込みしてください。');
+    return false;
+  }
+}
+async function buildBackupSnapshot(){
+  const snap=JSON.parse(JSON.stringify(db));
+  const jobs=[];
+  forEachCustomer(snap,d=>{
+    jobs.push((async()=>{
+      ensurePhotoId(d);
+      if(!Array.isArray(d.photos))d.photos=await getPhotoRecord(d.photoId);
+    })());
+  });
+  await Promise.all(jobs);
+  return snap;
 }
 function loadDB(){
   dbWriteLocked=false;
@@ -593,7 +785,7 @@ function saveDB(options={}){
 
   let previousRaw=null;
   try{
-    const newRaw=JSON.stringify(db);
+    const newRaw=JSON.stringify(photoStorageReady?storageSnapshotWithoutPhotos(db):db);
     const newParsed=JSON.parse(newRaw);
     if(!isValidDBRoot(newParsed))throw new Error('invalid new db');
 
@@ -651,10 +843,12 @@ function saveDB(options={}){
       e.code===1014
     );
 
-    if(isQuota){
-      alert('保存容量がいっぱいです。写真を減らすか、不要な客先写真を削除してから再度保存してください。既存の客先データは消えていません。');
-    }else{
-      alert('客先データの保存に失敗しました。既存データは保護されています。画面を閉じず、もう一度お試しください。');
+    if(!options.silent){
+      if(isQuota){
+        alert('客先情報の保存容量がいっぱいです。既存の客先データは消えていません。バックアップを確認してください。');
+      }else{
+        alert('客先データの保存に失敗しました。既存データは保護されています。画面を閉じず、もう一度お試しください。');
+      }
     }
     return false;
   }
@@ -854,10 +1048,15 @@ function showDest(area){
 }
 function backFromDest(){if(HAS_AREA[curProduct]){areaEditMode=false;hideAll();show('view-area');showArea();}else{showTop();}}
 
-function showDetail(key){
+async function showDetail(key){
   curKey=key;
   const {tab,area,idx}=decKey(key);
   const d=getList(tab,area)[idx];if(!d)return;
+  try{await loadCustomerPhotos(d);}catch(e){
+    console.error('photo load failed',e);
+    d.photos=[];
+    alert('写真の読み込みに失敗しました。客先情報はそのまま利用できます。');
+  }
   addRecentViewed(tab,area,idx);
   document.getElementById('detail-title').textContent=(d.symbol?`[${d.symbol}] `:'')+( d.name||'（名称未設定）');
   let html='<div style="margin-top:8px">';
@@ -884,11 +1083,21 @@ function showDetail(key){
 }
 function backFromDetail(){hideAll();show('view-dest');showDest(curArea);}
 
-function showForm(mode){
+async function showForm(mode){
   editMode=(mode==='edit');
   document.getElementById('form-title').textContent=editMode?'編集':'客先を追加';
   let d=null,tab=curProduct,area=curArea;
-  if(editMode&&curKey){const k=decKey(curKey);tab=k.tab;area=k.area;d=getList(k.tab,k.area)[k.idx];}
+  if(editMode&&curKey){
+    const k=decKey(curKey);
+    tab=k.tab;area=k.area;d=getList(k.tab,k.area)[k.idx];
+    if(d){
+      try{await loadCustomerPhotos(d);}catch(e){
+        console.error('photo load failed',e);
+        d.photos=[];
+        alert('写真の読み込みに失敗しました。客先情報は編集できます。');
+      }
+    }
+  }
   const areaSec=document.getElementById('f-area-sec');
   if(HAS_AREA[tab]){
     areaSec.style.display='block';
@@ -912,11 +1121,20 @@ function cancelForm(){
   hideAll();
   if(editMode&&curKey){showDetail(curKey);}else{showDest(curArea);}
 }
-function saveDest(){
+async function saveDest(){
   const name=document.getElementById('f-name').value.trim();
   if(!name){alert('客先名を入力してください');return;}
+  if(dbWriteLocked){alert('データ保護中のため保存できません。バックアップを確認してください。');return;}
 
   const saveTab=(editMode&&curKey)?decKey(curKey).tab:curProduct;
+  let editKey=null,originalCustomer=null;
+
+  if(editMode&&curKey){
+    editKey=decKey(curKey);
+    originalCustomer=getList(editKey.tab,editKey.area)[editKey.idx];
+    if(originalCustomer){try{await loadCustomerPhotos(originalCustomer);}catch(e){}}
+  }
+
   const d={
     symbol:document.getElementById('f-symbol').value.trim(),
     name,
@@ -924,12 +1142,22 @@ function saveDest(){
     start:document.getElementById('f-start').value,
     end:document.getElementById('f-end').value,
     notes:document.getElementById('f-notes').value.trim(),
-    photos:formPhotos
+    photoId:originalCustomer&&originalCustomer.photoId?originalCustomer.photoId:makePhotoId(),
+    photos:[...formPhotos]
   };
   if(saveTab===0)d.esterProducts=getEsterProductsFromForm(saveTab);
 
+  const previousPhotos=originalCustomer&&Array.isArray(originalCustomer.photos)?[...originalCustomer.photos]:[];
+
+  try{await saveCustomerPhotos(d);}
+  catch(e){
+    console.error('photo save failed',e);
+    alert('写真の保存に失敗しました。既存データは変更していません。');
+    return;
+  }
+
   if(editMode&&curKey){
-    const k=decKey(curKey);
+    const k=editKey;
     const newArea=HAS_AREA[k.tab]?document.getElementById('f-area').value:k.area;
 
     if(newArea!==k.area){
@@ -943,17 +1171,15 @@ function saveDest(){
       setList(k.tab,newArea,newList);
 
       if(!saveDB()){
-        // 保存失敗時は画面上のDBも元へ戻す
         newList.pop();
         setList(k.tab,newArea,newList);
         oldList.splice(k.idx,0,original);
         setList(k.tab,k.area,oldList);
+        try{original.photos=previousPhotos;await saveCustomerPhotos(original);}catch(e){}
         return;
       }
 
-      curProduct=k.tab;
-      curArea=newArea;
-      curKey=encKey(k.tab,newArea,newList.length-1);
+      curProduct=k.tab;curArea=newArea;curKey=encKey(k.tab,newArea,newList.length-1);
     }else{
       const list=getList(k.tab,k.area);
       const original=list[k.idx];
@@ -963,15 +1189,13 @@ function saveDest(){
       if(!saveDB()){
         list[k.idx]=original;
         setList(k.tab,k.area,list);
+        try{original.photos=previousPhotos;await saveCustomerPhotos(original);}catch(e){}
         return;
       }
 
-      curProduct=k.tab;
-      curArea=k.area;
-      curKey=encKey(k.tab,k.area,k.idx);
+      curProduct=k.tab;curArea=k.area;curKey=encKey(k.tab,k.area,k.idx);
     }
 
-    // 編集保存後は必ず客先一覧へ戻る
     showDest(curArea);
     return;
   }
@@ -983,27 +1207,30 @@ function saveDest(){
   if(!saveDB()){
     list.pop();
     setList(curProduct,curArea,list);
+    try{await deletePhotoRecord(d.photoId);}catch(e){}
     return;
   }
 
-  // 新規保存後も必ず客先一覧へ戻る
   showDest(curArea);
 }
-function deleteDest(){
+async function deleteDest(){
   if(!confirm('この客先を削除しますか？'))return;
   const {tab,area,idx}=decKey(curKey);
   const list=getList(tab,area);
   const removed=list[idx];
   list.splice(idx,1);
   setList(tab,area,list);
+
   if(!saveDB()){
     list.splice(idx,0,removed);
     setList(tab,area,list);
     return;
   }
-  curKey=null;
-  curArea=area;
-  curProduct=tab;
+
+  try{if(removed&&removed.photoId)await deletePhotoRecord(removed.photoId);}
+  catch(e){console.warn('写真データの削除に失敗しました',e);}
+
+  curKey=null;curArea=area;curProduct=tab;
   showDest(area);
 }
 
@@ -1099,8 +1326,9 @@ function getBackupDateKey(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
-function downloadBackupFile(mode='manual'){
-  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+async function downloadBackupFile(mode='manual'){
+  const backupDB=await buildBackupSnapshot();
+  const blob=new Blob([JSON.stringify(backupDB,null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob);
   const a=document.createElement('a');
   const d=new Date();
@@ -1115,14 +1343,18 @@ function downloadBackupFile(mode='manual'){
   a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
-function exportJSON(){
-  downloadBackupFile('manual');
+async function exportJSON(){
+  try{await downloadBackupFile('manual');}
+  catch(e){
+    console.error('backup export failed',e);
+    alert('バックアップ作成に失敗しました。ページを再読み込みしてから再度お試しください。');
+  }
 }
-function runDailyBackup(){
+async function runDailyBackup(){
   const today=getBackupDateKey();
   if(localStorage.getItem(AUTO_BACKUP_KEY)===today)return true;
   try{
-    downloadBackupFile('auto');
+    await downloadBackupFile('auto');
     localStorage.setItem(AUTO_BACKUP_KEY,today);
     return true;
   }catch(e){
@@ -1136,10 +1368,12 @@ function setupDailyBackup(){
 
   // モバイルブラウザは画面表示直後の自動ダウンロードを止める場合があるため、
   // その日の最初のタップを利用して確実にバックアップを保存する。
-  let done=false;
-  const once=()=>{
-    if(done)return;
-    done=runDailyBackup();
+  let done=false,running=false;
+  const once=async()=>{
+    if(done||running)return;
+    running=true;
+    done=await runDailyBackup();
+    running=false;
     if(done){
       document.removeEventListener('pointerdown',once,true);
       document.removeEventListener('touchstart',once,true);
@@ -1153,7 +1387,7 @@ function setupDailyBackup(){
 function importJSON(e){
   const file=e.target.files[0];if(!file)return;
   const r=new FileReader();
-  r.onload=ev=>{
+  r.onload=async ev=>{
     try{
       const parsed=JSON.parse(ev.target.result);
       if(!isValidDBRoot(parsed))throw new Error('invalid backup');
@@ -1163,6 +1397,15 @@ function importJSON(e){
         db=parsed;
         initDB();
         dbWriteLocked=false;
+
+        const jobs=[];
+        forEachCustomer(db,d=>{
+          ensurePhotoId(d);
+          jobs.push(putPhotoRecord(d.photoId,Array.isArray(d.photos)?d.photos:[]));
+        });
+        await Promise.all(jobs);
+        photoStorageReady=true;
+
         if(saveDB({allowMassClear:true})){
           showTop();
           alert('バックアップから復元しました');
@@ -1171,7 +1414,8 @@ function importJSON(e){
           dbWriteLocked=oldLocked;
         }
       }
-    }catch{
+    }catch(e){
+      console.error('backup import failed',e);
       alert('ファイルの読み込みに失敗しました。正しいバックアップJSONを選んでください。');
     }
   };
@@ -1204,22 +1448,37 @@ function openFormPhotoViewer(i){
   document.getElementById('photo-viewer').classList.add('open');
   document.getElementById('photo-viewer').dataset.mode='form';
 }
-function onDetailPhotoSelected(e){
+async function onDetailPhotoSelected(e){
   const files=Array.from(e.target.files);
+  e.target.value='';
+  if(!files.length)return;
+
   const {tab,area,idx}=decKey(curKey);
   const d=getList(tab,area)[idx];
-  if(!d.photos)d.photos=[];
-  let loaded=0;
-  files.forEach(f=>{
-    const reader=new FileReader();
-    reader.onload=ev=>{
-      d.photos.push(ev.target.result);
-      loaded++;
-      if(loaded===files.length){saveDB();showDetail(curKey);}
-    };
-    reader.readAsDataURL(f);
-  });
-  e.target.value='';
+
+  try{
+    await loadCustomerPhotos(d);
+    const oldPhotos=[...(d.photos||[])];
+    const added=await Promise.all(files.map(f=>new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=ev=>resolve(ev.target.result);
+      reader.onerror=()=>reject(reader.error||new Error('file read failed'));
+      reader.readAsDataURL(f);
+    })));
+
+    d.photos=[...oldPhotos,...added];
+    await saveCustomerPhotos(d);
+
+    if(!saveDB()){
+      d.photos=oldPhotos;
+      await saveCustomerPhotos(d);
+      return;
+    }
+    await showDetail(curKey);
+  }catch(err){
+    console.error('detail photo save failed',err);
+    alert('写真の保存に失敗しました。既存データは変更していません。');
+  }
 }
 function openPhotoViewer(i){
   const {tab,area,idx}=decKey(curKey);
@@ -1233,18 +1492,35 @@ function closePhotoViewer(e){
   if(e&&e.target!==document.getElementById('photo-viewer')&&!e.target.classList.contains('photo-viewer-close'))return;
   document.getElementById('photo-viewer').classList.remove('open');
 }
-function deleteViewingPhoto(){
+async function deleteViewingPhoto(){
   const mode=document.getElementById('photo-viewer').dataset.mode;
   if(!confirm('この写真を削除しますか？'))return;
   document.getElementById('photo-viewer').classList.remove('open');
+
   if(mode==='form'){
     formPhotos.splice(viewingPhotoIdx,1);
     renderFormPhotos();
-  } else {
-    const {tab,area,idx}=decKey(curKey);
-    const d=getList(tab,area)[idx];
-    if(d.photos)d.photos.splice(viewingPhotoIdx,1);
-    saveDB();showDetail(curKey);
+    return;
+  }
+
+  const {tab,area,idx}=decKey(curKey);
+  const d=getList(tab,area)[idx];
+
+  try{
+    await loadCustomerPhotos(d);
+    const oldPhotos=[...(d.photos||[])];
+    d.photos.splice(viewingPhotoIdx,1);
+    await saveCustomerPhotos(d);
+
+    if(!saveDB()){
+      d.photos=oldPhotos;
+      await saveCustomerPhotos(d);
+      return;
+    }
+    await showDetail(curKey);
+  }catch(err){
+    console.error('photo delete failed',err);
+    alert('写真の削除に失敗しました。既存データは変更していません。');
   }
 }
 
@@ -1277,7 +1553,14 @@ function deleteViewingPhoto(){
   },{passive:true});
 })();
 
-loadDB();showTop();setupDailyBackup();
+async function startApp(){
+  loadDB();
+  const ok=await migrateLegacyPhotos();
+  if(!ok)return;
+  showTop();
+  setupDailyBackup();
+}
+startApp();
 </script>
 </body>
 </html>
