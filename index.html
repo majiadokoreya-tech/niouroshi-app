@@ -110,7 +110,12 @@ input[type=file]{display:none}
 .ester-unload-detail:last-child{border-bottom:0}
 .ester-unload-detail-name{font-weight:700}
 .ester-unload-detail-val{text-align:right}
+.drive-panel{margin:14px 0;padding:14px;border:1px solid #dfe3e8;border-radius:14px;background:#fff}
+.drive-title{font-weight:800;font-size:16px;margin-bottom:7px}.drive-status{font-size:13px;color:#666;line-height:1.55;margin-bottom:10px}
+.drive-actions{display:flex;gap:8px;flex-wrap:wrap}.drive-btn{border:0;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;background:#eef3ff;color:#174ea6}
+.drive-btn.primary{background:#1a73e8;color:#fff}.drive-btn:disabled{opacity:.5}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -123,7 +128,13 @@ input[type=file]{display:none}
   <div id="recent-viewed" class="recent-section"></div>
   <div class="card-list" id="product-list"></div>
   <div class="backup-bar">
-    <button class="backup-btn" onclick="exportJSON()">バックアップ保存</button>
+    <button class="backup-btn" onclick="exportJSON()">バックアップ保存</button><div class="drive-panel">
+<div class="drive-title">Google Drive バックアップ</div>
+<div class="drive-status" id="drive-status">未接続です。初回のみGoogle Driveへ接続してください。</div>
+<div class="drive-actions">
+<button type="button" class="drive-btn primary" id="drive-connect-btn" onclick="connectGoogleDrive()">Google Driveに接続</button>
+<button type="button" class="drive-btn" id="drive-backup-btn" onclick="manualDriveBackup()" disabled>今すぐDrive保存</button>
+</div></div>
     <button class="backup-btn" onclick="document.getElementById('imp').click()">バックアップ読込</button>
     <input type="file" id="imp" accept=".json" onchange="importJSON(event)">
   </div>
@@ -577,10 +588,21 @@ const DB_RECOVERY_KEY='niouroshi-v2-recovery-v1';
 const PHOTO_DB_NAME='niouroshi-photos-v1';
 const PHOTO_DB_VERSION=1;
 const PHOTO_STORE='customerPhotos';
+const GOOGLE_CLIENT_ID='933303100688-sri3atqlqkqlg8i1ocjvemtd9ucvhhk6.apps.googleusercontent.com';
+const GOOGLE_DRIVE_SCOPE='https://www.googleapis.com/auth/drive.file';
+const DRIVE_FILE_ID_KEY='niouroshi-drive-backup-file-id-v1';
+const DRIVE_CONNECTED_KEY='niouroshi-drive-connected-v1';
+const DRIVE_LAST_BACKUP_KEY='niouroshi-drive-last-backup-v1';
+const DRIVE_BACKUP_FILENAME='客先管理アプリ_最新バックアップ.json';
 let db={ester:{},sulfuric:[],polymer:{},chlorine:[],ammonia:[]};
 let dbWriteLocked=false;
 let photoStorageReady=false;
 let photoDBPromise=null;
+let googleTokenClient=null;
+let googleAccessToken='';
+let googleTokenExpiresAt=0;
+let driveBackupBusy=false;
+let driveBackupQueued=false;
 let curProduct=0,curArea=null,curKey=null,editMode=false;
 
 function initDB(){
@@ -823,6 +845,7 @@ function saveDB(options={}){
     const verifyParsed=JSON.parse(verifyRaw);
     if(!isValidDBRoot(verifyParsed))throw new Error('verify parse failed');
 
+    scheduleDriveBackup();
     return true;
   }catch(e){
     console.error('saveDB failed',e);
@@ -1322,6 +1345,103 @@ function selectRate(idx){
 
 const AUTO_BACKUP_KEY='niouroshi-auto-backup-date-v1';
 
+
+function updateDriveStatus(message){
+  const el=document.getElementById('drive-status'); if(el)el.textContent=message;
+  const connected=localStorage.getItem(DRIVE_CONNECTED_KEY)==='1';
+  const b=document.getElementById('drive-backup-btn'); if(b)b.disabled=!connected;
+  const c=document.getElementById('drive-connect-btn'); if(c)c.textContent=connected?'Google Driveを再接続':'Google Driveに接続';
+}
+function formatDriveBackupTime(iso){
+  if(!iso)return ''; const d=new Date(iso); if(Number.isNaN(d.getTime()))return '';
+  return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function refreshDriveStatus(){
+  const connected=localStorage.getItem(DRIVE_CONNECTED_KEY)==='1', last=localStorage.getItem(DRIVE_LAST_BACKUP_KEY);
+  updateDriveStatus(connected?(last?`接続済み・最終Drive保存 ${formatDriveBackupTime(last)}`:'接続済み・まだDrive保存はありません'):'未接続です。初回のみGoogle Driveへ接続してください。');
+}
+function waitForGoogleIdentity(timeoutMs=10000){
+  return new Promise((resolve,reject)=>{
+    const start=Date.now(), timer=setInterval(()=>{
+      if(window.google&&google.accounts&&google.accounts.oauth2){clearInterval(timer);resolve(true);}
+      else if(Date.now()-start>=timeoutMs){clearInterval(timer);reject(new Error('Google Identity Services load timeout'));}
+    },100);
+  });
+}
+async function initGoogleTokenClient(){
+  if(googleTokenClient)return googleTokenClient;
+  await waitForGoogleIdentity();
+  googleTokenClient=google.accounts.oauth2.initTokenClient({client_id:GOOGLE_CLIENT_ID,scope:GOOGLE_DRIVE_SCOPE,callback:()=>{}});
+  return googleTokenClient;
+}
+function requestGoogleAccessToken(promptMode=''){
+  return new Promise(async(resolve,reject)=>{
+    try{
+      const client=await initGoogleTokenClient();
+      client.callback=resp=>{
+        if(resp&&resp.error){reject(new Error(resp.error));return;}
+        if(!resp||!resp.access_token){reject(new Error('access token missing'));return;}
+        googleAccessToken=resp.access_token;
+        googleTokenExpiresAt=Date.now()+Math.max(60,Number(resp.expires_in||3600)-60)*1000;
+        localStorage.setItem(DRIVE_CONNECTED_KEY,'1'); refreshDriveStatus(); resolve(googleAccessToken);
+      };
+      client.error_callback=err=>reject(err instanceof Error?err:new Error(String(err&&err.type||'oauth error')));
+      client.requestAccessToken({prompt:promptMode});
+    }catch(e){reject(e);}
+  });
+}
+async function connectGoogleDrive(){
+  try{
+    updateDriveStatus('Google認証を開いています…');
+    await requestGoogleAccessToken('consent');
+    await backupToGoogleDrive({interactive:true,showSuccess:true});
+  }catch(e){console.error(e);refreshDriveStatus();alert('Google Driveへの接続を完了できませんでした。もう一度お試しください。');}
+}
+function driveMultipartBody(metadata,jsonText,boundary){
+  const d=`\r\n--${boundary}\r\n`, c=`\r\n--${boundary}--`;
+  return new Blob([`--${boundary}\r\n`,'Content-Type: application/json; charset=UTF-8\r\n\r\n',JSON.stringify(metadata),d,'Content-Type: application/json; charset=UTF-8\r\n\r\n',jsonText,c],{type:`multipart/related; boundary=${boundary}`});
+}
+async function createDriveBackupFile(token,jsonText){
+  const boundary='niouroshi_'+Date.now().toString(36);
+  const res=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name',{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':`multipart/related; boundary=${boundary}`},body:driveMultipartBody({name:DRIVE_BACKUP_FILENAME,mimeType:'application/json'},jsonText,boundary)});
+  if(!res.ok)throw new Error(`Drive create failed ${res.status}: ${await res.text()}`); return res.json();
+}
+async function updateDriveBackupFile(token,fileId,jsonText){
+  const res=await fetch(`https://www.googleapis.com/upload/drive/v3/files/${encodeURIComponent(fileId)}?uploadType=media&fields=id,name,modifiedTime`,{method:'PATCH',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json; charset=UTF-8'},body:jsonText});
+  if(res.status===404)return null; if(!res.ok)throw new Error(`Drive update failed ${res.status}: ${await res.text()}`); return res.json();
+}
+async function backupToGoogleDrive({interactive=false,showSuccess=false}={}){
+  if(localStorage.getItem(DRIVE_CONNECTED_KEY)!=='1'&&!interactive)return false;
+  if(driveBackupBusy){driveBackupQueued=true;return true;} driveBackupBusy=true;
+  try{
+    if(!googleAccessToken||Date.now()>=googleTokenExpiresAt){
+      if(!interactive){updateDriveStatus('再認証が必要です。「Google Driveを再接続」を押してください。');return false;}
+      await requestGoogleAccessToken('');
+    }
+    updateDriveStatus('Google Driveへ保存中…');
+    const jsonText=JSON.stringify(await buildBackupSnapshot(),null,2);
+    let fileId=localStorage.getItem(DRIVE_FILE_ID_KEY), result=null;
+    if(fileId){result=await updateDriveBackupFile(googleAccessToken,fileId,jsonText);if(!result){localStorage.removeItem(DRIVE_FILE_ID_KEY);fileId=null;}}
+    if(!fileId){result=await createDriveBackupFile(googleAccessToken,jsonText);if(result&&result.id)localStorage.setItem(DRIVE_FILE_ID_KEY,result.id);}
+    localStorage.setItem(DRIVE_LAST_BACKUP_KEY,new Date().toISOString()); localStorage.setItem(DRIVE_CONNECTED_KEY,'1'); refreshDriveStatus();
+    if(showSuccess)alert('Google Driveに最新バックアップを保存しました。'); return true;
+  }catch(e){
+    console.error('Drive backup failed',e); updateDriveStatus('Drive保存に失敗しました。端末内データは保存されています。');
+    if(showSuccess)alert('Google Driveへの保存に失敗しました。端末内の客先データは保存されています。'); return false;
+  }finally{
+    driveBackupBusy=false;
+    if(driveBackupQueued){driveBackupQueued=false;setTimeout(()=>backupToGoogleDrive({interactive:false}),250);}
+  }
+}
+async function manualDriveBackup(){
+  if(localStorage.getItem(DRIVE_CONNECTED_KEY)!=='1'){await connectGoogleDrive();return;}
+  await backupToGoogleDrive({interactive:true,showSuccess:true});
+}
+function scheduleDriveBackup(){
+  if(localStorage.getItem(DRIVE_CONNECTED_KEY)!=='1')return;
+  clearTimeout(scheduleDriveBackup.timer); scheduleDriveBackup.timer=setTimeout(()=>backupToGoogleDrive({interactive:false}),700);
+}
+
 function getBackupDateKey(){
   const d=new Date();
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
@@ -1559,6 +1679,7 @@ async function startApp(){
   if(!ok)return;
   showTop();
   setupDailyBackup();
+  refreshDriveStatus();
 }
 startApp();
 </script>
