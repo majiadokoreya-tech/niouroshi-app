@@ -212,6 +212,23 @@ input[type=file]{display:none}
       <div class="form-hint">荷卸しした品目だけ、トン数と荷卸し時間を入力してください</div>
     </div>
     <div class="form-section">
+      <div class="form-label">必要な物</div>
+      <textarea class="form-textarea" id="f-required-items" placeholder="例：保護メガネ、専用ホース、工具など" style="min-height:100px"></textarea>
+      <div class="form-hint">この客先の荷卸しで必要な物を記録できます</div>
+    </div>
+    <div class="form-section">
+      <div class="form-label">残液の有無</div>
+      <select class="form-select" id="f-residual-liquid">
+        <option value="">未設定</option><option value="あり">あり</option><option value="なし">なし</option>
+      </select>
+    </div>
+    <div class="form-section">
+      <div class="form-label">マンホールを開けていいか</div>
+      <select class="form-select" id="f-manhole">
+        <option value="">未設定</option><option value="開けてよい">開けてよい</option><option value="開けない">開けない</option><option value="要確認">要確認</option>
+      </select>
+    </div>
+    <div class="form-section">
       <div class="form-label">メモ</div>
       <textarea class="form-textarea" id="f-notes" placeholder="注意事項や備考など"></textarea>
     </div>
@@ -1093,6 +1110,13 @@ async function showDetail(key){
   if(d.end)html+=`<div class="info-row"><span class="info-key">終業</span><span class="info-val">${esc(d.end)}</span></div>`;
   if(!d.allowance&&!d.start&&!d.end)html+=`<div style="font-size:13px;color:#ccc">未登録</div>`;
   html+=`</div>`;
+  if(d.requiredItems||d.residualLiquid||d.manhole){
+    html+=`<div class="section"><div class="section-label">荷卸し情報</div>`;
+    if(d.requiredItems)html+=`<div class="info-row"><span class="info-key">必要な物</span><span class="info-val" style="white-space:pre-wrap">${esc(d.requiredItems)}</span></div>`;
+    if(d.residualLiquid)html+=`<div class="info-row"><span class="info-key">残液</span><span class="info-val">${esc(d.residualLiquid)}</span></div>`;
+    if(d.manhole)html+=`<div class="info-row"><span class="info-key">マンホール</span><span class="info-val">${esc(d.manhole)}</span></div>`;
+    html+=`</div>`;
+  }
   if(d.notes)html+=`<div class="section"><div class="section-label">メモ</div><div class="note-box">${esc(d.notes)}</div></div>`;
   html+=renderEsterProductsForDetail(d,tab);
   const photos=d.photos||[];
@@ -1132,6 +1156,9 @@ async function showForm(mode){
   document.getElementById('f-symbol').value=d?d.symbol||'':'';
   document.getElementById('f-name').value=d?d.name||'':'';
   document.getElementById('f-allowance').value=d?d.allowance||'':'';
+  document.getElementById('f-required-items').value=d?d.requiredItems||'':'';
+  document.getElementById('f-residual-liquid').value=d?d.residualLiquid||'':'';
+  document.getElementById('f-manhole').value=d?d.manhole||'':'';
   document.getElementById('f-notes').value=d?d.notes||'':'';
   setEsterProductsToForm(d,tab);
   document.getElementById('rate-select-label').textContent='料金表から客先を選ぶ';
@@ -1164,6 +1191,9 @@ async function saveDest(){
     allowance:document.getElementById('f-allowance').value.trim(),
     start:document.getElementById('f-start').value,
     end:document.getElementById('f-end').value,
+    requiredItems:document.getElementById('f-required-items').value.trim(),
+    residualLiquid:document.getElementById('f-residual-liquid').value,
+    manhole:document.getElementById('f-manhole').value,
     notes:document.getElementById('f-notes').value.trim(),
     photoId:originalCustomer&&originalCustomer.photoId?originalCustomer.photoId:makePhotoId(),
     photos:[...formPhotos]
