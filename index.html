@@ -77,7 +77,8 @@ input[type=file]{display:none}
 .photo-add:active{background:#f0f0ec}
 .photo-viewer{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:300;flex-direction:column;align-items:center;justify-content:center}
 .photo-viewer.open{display:flex}
-.photo-viewer img{max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px}
+.photo-viewer img{max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px;touch-action:none;user-select:none;-webkit-user-select:none;transform-origin:center center;will-change:transform}
+.photo-viewer-zoom-hint{position:absolute;top:18px;left:16px;color:#fff;font-size:12px;pointer-events:none;opacity:.85}
 .photo-viewer-close{position:absolute;top:16px;right:16px;color:#fff;font-size:28px;cursor:pointer;line-height:1;padding:8px}
 .photo-viewer-del{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);color:#ff4444;font-size:15px;cursor:pointer;padding:10px 24px;background:rgba(255,255,255,0.15);border-radius:20px}
 /* スワイプ */
@@ -258,7 +259,8 @@ input[type=file]{display:none}
 
 <div id="photo-viewer" class="photo-viewer" onclick="closePhotoViewer(event)">
   <span class="photo-viewer-close" onclick="closePhotoViewer()">×</span>
-  <img id="photo-viewer-img" src="">
+  <img id="photo-viewer-img" src="" draggable="false">
+  <span class="photo-viewer-zoom-hint">2本指で拡大・縮小 / ダブルタップで切替</span>
   <span class="photo-viewer-del" onclick="deleteViewingPhoto()">この写真を削除</span>
 </div>
 
@@ -1572,6 +1574,72 @@ function importJSON(e){
   r.readAsText(file);e.target.value='';
 }
 
+/* 写真ズーム: 2本指ピンチ・ドラッグ・ダブルタップ */
+let photoZoomScale=1,photoZoomX=0,photoZoomY=0;
+let photoGesture=null,photoLastTap=0;
+function applyPhotoZoom(){
+  const img=document.getElementById('photo-viewer-img');
+  if(img)img.style.transform=`translate(${photoZoomX}px,${photoZoomY}px) scale(${photoZoomScale})`;
+}
+function resetPhotoZoom(){
+  photoZoomScale=1;photoZoomX=0;photoZoomY=0;photoGesture=null;applyPhotoZoom();
+}
+function photoDistance(a,b){return Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);}
+function photoMidpoint(a,b){return {x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2};}
+function clampPhotoPan(){
+  const img=document.getElementById('photo-viewer-img');if(!img)return;
+  const maxX=Math.max(0,(img.clientWidth*photoZoomScale-innerWidth)/2+35);
+  const maxY=Math.max(0,(img.clientHeight*photoZoomScale-innerHeight)/2+35);
+  photoZoomX=Math.max(-maxX,Math.min(maxX,photoZoomX));
+  photoZoomY=Math.max(-maxY,Math.min(maxY,photoZoomY));
+}
+function initPhotoZoom(){
+  const img=document.getElementById('photo-viewer-img');if(!img)return;
+  img.addEventListener('touchstart',e=>{
+    if(e.touches.length===2){
+      e.preventDefault();const m=photoMidpoint(e.touches[0],e.touches[1]);
+      photoGesture={kind:'pinch',distance:photoDistance(e.touches[0],e.touches[1]),scale:photoZoomScale,x:photoZoomX,y:photoZoomY,mid:m};
+    }else if(e.touches.length===1){
+      photoGesture={kind:'drag',startX:e.touches[0].clientX,startY:e.touches[0].clientY,x:photoZoomX,y:photoZoomY};
+    }
+  },{passive:false});
+  img.addEventListener('touchmove',e=>{
+    if(!photoGesture)return;
+    if(e.touches.length===2){
+      e.preventDefault();
+      if(photoGesture.kind!=='pinch'){
+        const m=photoMidpoint(e.touches[0],e.touches[1]);
+        photoGesture={kind:'pinch',distance:photoDistance(e.touches[0],e.touches[1]),scale:photoZoomScale,x:photoZoomX,y:photoZoomY,mid:m};
+      }
+      const m=photoMidpoint(e.touches[0],e.touches[1]);
+      photoZoomScale=Math.min(5,Math.max(1,photoGesture.scale*photoDistance(e.touches[0],e.touches[1])/Math.max(1,photoGesture.distance)));
+      photoZoomX=photoGesture.x+(m.x-photoGesture.mid.x);
+      photoZoomY=photoGesture.y+(m.y-photoGesture.mid.y);
+      clampPhotoPan();applyPhotoZoom();
+    }else if(e.touches.length===1&&photoGesture.kind==='drag'&&photoZoomScale>1){
+      e.preventDefault();photoZoomX=photoGesture.x+e.touches[0].clientX-photoGesture.startX;
+      photoZoomY=photoGesture.y+e.touches[0].clientY-photoGesture.startY;
+      clampPhotoPan();applyPhotoZoom();
+    }
+  },{passive:false});
+  img.addEventListener('touchend',e=>{
+    if(e.touches.length===0){
+      photoGesture=null;
+      if(photoZoomScale<=1){photoZoomX=0;photoZoomY=0;applyPhotoZoom();}
+    }else if(e.touches.length===1){
+      photoGesture={kind:'drag',startX:e.touches[0].clientX,startY:e.touches[0].clientY,x:photoZoomX,y:photoZoomY};
+    }
+  },{passive:false});
+  img.addEventListener('dblclick',e=>{e.preventDefault();photoZoomScale=photoZoomScale>1?1:2.5;photoZoomX=0;photoZoomY=0;applyPhotoZoom();});
+  img.addEventListener('touchend',e=>{
+    if(e.touches.length||e.changedTouches.length!==1)return;
+    const now=Date.now();if(now-photoLastTap<300){
+      photoZoomScale=photoZoomScale>1?1:2.5;photoZoomX=0;photoZoomY=0;applyPhotoZoom();photoLastTap=0;
+    }else photoLastTap=now;
+  },{passive:true});
+}
+document.addEventListener('DOMContentLoaded',initPhotoZoom);
+
 /* ===== 写真機能 ===== */
 let formPhotos=[];
 let viewingPhotoIdx=-1;
@@ -1594,6 +1662,7 @@ function onPhotoSelected(e){
 }
 function openFormPhotoViewer(i){
   viewingPhotoIdx=i;
+  resetPhotoZoom();
   document.getElementById('photo-viewer-img').src=formPhotos[i];
   document.getElementById('photo-viewer').classList.add('open');
   document.getElementById('photo-viewer').dataset.mode='form';
@@ -1634,6 +1703,7 @@ function openPhotoViewer(i){
   const {tab,area,idx}=decKey(curKey);
   const d=getList(tab,area)[idx];
   viewingPhotoIdx=i;
+  resetPhotoZoom();
   document.getElementById('photo-viewer-img').src=(d.photos||[])[i]||'';
   document.getElementById('photo-viewer').classList.add('open');
   document.getElementById('photo-viewer').dataset.mode='detail';
@@ -1641,6 +1711,7 @@ function openPhotoViewer(i){
 function closePhotoViewer(e){
   if(e&&e.target!==document.getElementById('photo-viewer')&&!e.target.classList.contains('photo-viewer-close'))return;
   document.getElementById('photo-viewer').classList.remove('open');
+  resetPhotoZoom();
 }
 async function deleteViewingPhoto(){
   const mode=document.getElementById('photo-viewer').dataset.mode;
