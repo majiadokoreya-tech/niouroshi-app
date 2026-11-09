@@ -6,6 +6,12 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="荷卸し先">
 <title>荷卸し先</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#ffffff">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',sans-serif;background:#f5f5f0;color:#1a1a1a;min-height:100vh}
@@ -127,6 +133,9 @@ input[type=file]{display:none}
 .drive-title{font-weight:800;font-size:16px;margin-bottom:7px}.drive-status{font-size:13px;color:#666;line-height:1.55;margin-bottom:10px}
 .drive-actions{display:flex;gap:8px;flex-wrap:wrap}.drive-btn{border:0;border-radius:10px;padding:10px 14px;font-size:14px;font-weight:700;background:#eef3ff;color:#174ea6}
 .drive-btn.primary{background:#1a73e8;color:#fff}.drive-btn:disabled{opacity:.5}
+.pwa-status{padding:6px 12px;font-size:12px;color:#45616f;background:#eef5f8;border-bottom:1px solid #dce8ee;min-height:27px}
+.pwa-status[data-kind="error"]{color:#a33;background:#fff0ee}
+.pwa-status[data-kind="offline"]{color:#855500;background:#fff5dc}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -134,6 +143,7 @@ input[type=file]{display:none}
 
 <div id="view-top">
   <div class="nav-header"><span class="screen-title">荷卸し先</span></div>
+  <div id="pwa-status" class="pwa-status" role="status" aria-live="polite">起動確認中…</div>
   <div style="padding:10px 12px 0">
     <input id="top-search" type="text" class="form-input" placeholder="客先名・記号で検索..." oninput="renderTopSearch()" autocomplete="off">
   </div>
@@ -904,6 +914,7 @@ function saveDB(options={}){
     const verifyParsed=JSON.parse(verifyRaw);
     if(!isValidDBRoot(verifyParsed))throw new Error('verify parse failed');
 
+    markPwaLocalSaved();
     scheduleDriveBackup();
     return true;
   }catch(e){
@@ -1423,6 +1434,8 @@ function updateDriveStatus(message){
   const connected=localStorage.getItem(DRIVE_CONNECTED_KEY)==='1';
   const b=document.getElementById('drive-backup-btn'); if(b)b.disabled=!connected;
   const c=document.getElementById('drive-connect-btn'); if(c)c.textContent=connected?'Google Driveを再接続':'Google Driveに接続';
+  if(message.includes('失敗'))pwaBackupError=true;
+  updatePwaStatus();
 }
 function formatDriveBackupTime(iso){
   if(!iso)return ''; const d=new Date(iso); if(Number.isNaN(d.getTime()))return '';
@@ -1484,7 +1497,7 @@ async function updateDriveBackupFile(token,fileId,jsonText){
 }
 async function backupToGoogleDrive({interactive=false,showSuccess=false}={}){
   if(localStorage.getItem(DRIVE_CONNECTED_KEY)!=='1'&&!interactive)return false;
-  if(driveBackupBusy){driveBackupQueued=true;return true;} driveBackupBusy=true;
+  if(driveBackupBusy){driveBackupQueued=true;return true;} driveBackupBusy=true;updatePwaStatus();
   try{
     if(!googleAccessToken||Date.now()>=googleTokenExpiresAt){
       if(!interactive){updateDriveStatus('再認証が必要です。「Google Driveを再接続」を押してください。');return false;}
@@ -1495,13 +1508,13 @@ async function backupToGoogleDrive({interactive=false,showSuccess=false}={}){
     let fileId=localStorage.getItem(DRIVE_FILE_ID_KEY), result=null;
     if(fileId){result=await updateDriveBackupFile(googleAccessToken,fileId,jsonText);if(!result){localStorage.removeItem(DRIVE_FILE_ID_KEY);fileId=null;}}
     if(!fileId){result=await createDriveBackupFile(googleAccessToken,jsonText);if(result&&result.id)localStorage.setItem(DRIVE_FILE_ID_KEY,result.id);}
-    localStorage.setItem(DRIVE_LAST_BACKUP_KEY,new Date().toISOString()); localStorage.setItem(DRIVE_CONNECTED_KEY,'1'); refreshDriveStatus();
+    localStorage.setItem(DRIVE_LAST_BACKUP_KEY,new Date().toISOString()); localStorage.setItem(DRIVE_CONNECTED_KEY,'1'); pwaBackupError=false;refreshDriveStatus();
     if(showSuccess)alert('Google Driveに最新バックアップを保存しました。'); return true;
   }catch(e){
     console.error('Drive backup failed',e); updateDriveStatus('Drive保存に失敗しました。端末内データは保存されています。');
     if(showSuccess)alert('Google Driveへの保存に失敗しました。端末内の客先データは保存されています。'); return false;
   }finally{
-    driveBackupBusy=false;
+    driveBackupBusy=false;updatePwaStatus();
     if(driveBackupQueued){driveBackupQueued=false;setTimeout(()=>backupToGoogleDrive({interactive:false}),250);}
   }
 }
@@ -1907,6 +1920,46 @@ async function deleteViewingPhoto(){
   },{passive:true});
 })();
 
+
+/* ===== PWA v2026.11.09.1: 既存保存キー・DB・Drive方式は変更しない ===== */
+const PWA_VERSION='2026.11.09.1';
+const PWA_LAST_LOCAL_SAVE_KEY='niouroshi-pwa-last-local-save-v1';
+let pwaBackupError=false;
+function updatePwaStatus(){
+  const el=document.getElementById('pwa-status');if(!el)return;
+  const online=navigator.onLine;
+  const local=localStorage.getItem(DB_KEY)!==null;
+  const lastLocal=Date.parse(localStorage.getItem(PWA_LAST_LOCAL_SAVE_KEY)||'')||0;
+  const lastDrive=Date.parse(localStorage.getItem(DRIVE_LAST_BACKUP_KEY)||'')||0;
+  const connected=localStorage.getItem(DRIVE_CONNECTED_KEY)==='1';
+  let message='起動確認中…',kind='normal';
+  if(!online){message='オフライン · '+(local?'端末保存済み':'端末データ確認中');kind='offline';}
+  else if(driveBackupBusy){message='バックアップ中…';}
+  else if(pwaBackupError){message='バックアップエラー · 端末データは保持';kind='error';}
+  else if(connected&&lastDrive&&lastDrive>=lastLocal){message='端末保存済み ✓ · Driveバックアップ済み ✓';}
+  else if(connected&&lastLocal>lastDrive){message='端末保存済み ✓ · 未バックアップあり';}
+  else if(local){message='端末保存済み ✓'+(connected?' · Drive未バックアップ':' · Drive未接続');}
+  else{message='起動確認中…';}
+  el.textContent=message;el.dataset.kind=kind;
+}
+function markPwaLocalSaved(){
+  try{localStorage.setItem(PWA_LAST_LOCAL_SAVE_KEY,new Date().toISOString());}catch(e){console.warn(e);}
+  pwaBackupError=false;updatePwaStatus();
+}
+function registerPwaServiceWorker(){
+  if(!('serviceWorker' in navigator))return;
+  let registration;
+  navigator.serviceWorker.register('./sw.js',{scope:'./',updateViaCache:'none'})
+    .then(reg=>{registration=reg;return reg.update();})
+    .catch(err=>console.warn('Service Worker登録または更新確認に失敗',err));
+  const update=()=>{if(registration)registration.update().catch(err=>console.warn('SW更新確認',err));};
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){update();updatePwaStatus();}});
+  window.addEventListener('pageshow',update);
+  window.addEventListener('online',()=>{update();updatePwaStatus();});
+  window.addEventListener('offline',updatePwaStatus);
+}
+registerPwaServiceWorker();
+
 async function startApp(){
   loadDB();
   const ok=await migrateLegacyPhotos();
@@ -1914,8 +1967,10 @@ async function startApp(){
   showTop();
   setupDailyBackup();
   refreshDriveStatus();
+  updatePwaStatus();
 }
 startApp();
 </script>
 </body>
 </html>
+<!-- 変更履歴 2026-11-09 v2026.11.09.1: PWA manifest、Service Worker登録、起動/端末保存/Driveバックアップ状態表示を追加。既存のlocalStorage/IndexedDB/写真/JSON/Driveバックアップ/復元/カメラ機能を維持。 -->
