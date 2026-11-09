@@ -84,6 +84,15 @@ input[type=file]{display:none}
 .photo-viewer-zoom-hint{position:absolute;top:18px;left:16px;color:#fff;font-size:12px;pointer-events:none;opacity:.85}
 .photo-viewer-close{position:absolute;top:16px;right:16px;color:#fff;font-size:28px;cursor:pointer;line-height:1;padding:8px}
 .photo-viewer-del{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);color:#ff4444;font-size:15px;cursor:pointer;padding:10px 24px;background:rgba(255,255,255,0.15);border-radius:20px}
+/* アプリ内カメラ：端末の写真ライブラリには書き込まない */
+.inapp-camera{display:none;position:fixed;inset:0;z-index:500;background:#080808;color:white;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:16px}
+.inapp-camera.open{display:flex}
+.inapp-camera video{width:100%;max-height:72dvh;object-fit:contain;background:#000;border-radius:12px}
+.inapp-camera-actions{display:flex;gap:14px;width:100%;max-width:420px}
+.inapp-camera-actions button{flex:1;border:0;border-radius:12px;padding:16px 8px;font-size:16px;font-weight:700;cursor:pointer}
+.inapp-camera-cancel{background:#444;color:#fff}
+.inapp-camera-shutter{background:#fff;color:#111}
+.inapp-camera-hint{font-size:12px;color:#ddd;text-align:center}
 /* スワイプ */
 .swipe-wrap{position:relative;overflow:hidden}
 .swipe-wrap>div{transition:transform 0.25s ease}
@@ -240,7 +249,6 @@ input[type=file]{display:none}
       <div class="form-label">写真</div>
       <div class="photo-grid" id="f-photo-grid"></div>
       <input type="file" id="f-photo-input" accept="image/*" multiple onchange="onPhotoSelected(event)">
-      <input type="file" id="f-camera-input" accept="image/*" capture="environment" onchange="onPhotoSelected(event)">
     </div>
     <div style="padding:8px 0 16px">
       <button class="save-btn" onclick="saveDest()">保存する</button>
@@ -268,6 +276,15 @@ input[type=file]{display:none}
       <button type="button" class="photo-source-btn" onclick="choosePhotoSource('camera')">📷 カメラで撮影</button>
       <button type="button" class="photo-source-btn" onclick="choosePhotoSource('album')">🖼️ アルバムから選択</button>
     </div>
+  </div>
+</div>
+
+<div id="inapp-camera" class="inapp-camera" role="dialog" aria-modal="true" aria-label="アプリ内カメラ">
+  <div class="inapp-camera-hint">撮影した写真はスマホのフォトに自動保存されません</div>
+  <video id="inapp-camera-video" autoplay playsinline muted></video>
+  <div class="inapp-camera-actions">
+    <button type="button" class="inapp-camera-cancel" onclick="closeInAppCamera()">キャンセル</button>
+    <button type="button" class="inapp-camera-shutter" id="inapp-camera-shutter" onclick="takeInAppPhoto()">📸 撮影して追加</button>
   </div>
 </div>
 
@@ -1139,7 +1156,7 @@ async function showDetail(key){
   html+=`<div class="section"><div class="section-label">写真</div><div class="photo-grid">`;
   photos.forEach((p,i)=>{html+=`<img class="photo-thumb" src="${p}" onclick="openPhotoViewer(${i})">`;});
   html+=`<div class="photo-add" onclick="openPhotoSource('detail')">+</div>`;
-  html+=`</div><input type="file" id="detail-photo-input" accept="image/*" multiple onchange="onDetailPhotoSelected(event)"><input type="file" id="detail-camera-input" accept="image/*" capture="environment" onchange="onDetailPhotoSelected(event)"></div>`;
+  html+=`</div><input type="file" id="detail-photo-input" accept="image/*" multiple onchange="onDetailPhotoSelected(event)"></div>`;
   html+=`<button class="del-btn" onclick="deleteDest()">この客先を削除</button></div>`;
   document.getElementById('detail-body').innerHTML=html;
   hideAll();show('view-detail');
@@ -1654,8 +1671,10 @@ function initPhotoZoom(){
 }
 document.addEventListener('DOMContentLoaded',initPhotoZoom);
 
-/* 撮影またはアルバム選択。既存の写真保存処理を共用する */
+/* アプリ内撮影は getUserMedia + canvas で処理し、端末の写真ライブラリに保存しない。 */
 let photoSourceMode='form';
+let inAppCameraStream=null;
+let inAppCameraBusy=false;
 function openPhotoSource(mode){
   photoSourceMode=mode==='detail'?'detail':'form';
   document.getElementById('photo-source-modal').classList.add('open');
@@ -1663,13 +1682,86 @@ function openPhotoSource(mode){
 function closePhotoSource(){document.getElementById('photo-source-modal').classList.remove('open');}
 function closePhotoSourceBg(e){if(e.target===document.getElementById('photo-source-modal'))closePhotoSource();}
 function choosePhotoSource(source){
-  const id=photoSourceMode==='detail'
-    ?(source==='camera'?'detail-camera-input':'detail-photo-input')
-    :(source==='camera'?'f-camera-input':'f-photo-input');
   closePhotoSource();
+  if(source==='camera'){
+    openInAppCamera();
+    return;
+  }
+  const id=photoSourceMode==='detail'?'detail-photo-input':'f-photo-input';
   const input=document.getElementById(id);
   if(input)input.click();
 }
+async function openInAppCamera(){
+  if(!navigator.mediaDevices?.getUserMedia){
+    alert('このブラウザではアプリ内カメラを利用できません。HTTPSでアプリを開き、Chromeなどの対応ブラウザをご利用ください。');
+    return;
+  }
+  closeInAppCamera();
+  const modal=document.getElementById('inapp-camera');
+  const video=document.getElementById('inapp-camera-video');
+  modal.classList.add('open');
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'}}});
+    if(!modal.classList.contains('open')){stream.getTracks().forEach(t=>t.stop());return;}
+    inAppCameraStream=stream;
+    video.srcObject=stream;
+    await video.play();
+  }catch(err){
+    console.error('in-app camera unavailable',err);
+    closeInAppCamera();
+    alert('カメラを起動できませんでした。ブラウザのカメラ権限を確認してください。撮影画像がフォトに保存される通常のカメラへの自動切り替えは行いません。');
+  }
+}
+function closeInAppCamera(){
+  document.getElementById('inapp-camera').classList.remove('open');
+  if(inAppCameraStream){inAppCameraStream.getTracks().forEach(t=>t.stop());inAppCameraStream=null;}
+  const video=document.getElementById('inapp-camera-video');
+  if(video){video.pause();video.srcObject=null;}
+}
+async function takeInAppPhoto(){
+  if(inAppCameraBusy)return;
+  const video=document.getElementById('inapp-camera-video');
+  if(!inAppCameraStream||!video.videoWidth||!video.videoHeight){alert('カメラの準備ができるまでお待ちください。');return;}
+  inAppCameraBusy=true;
+  const shutter=document.getElementById('inapp-camera-shutter');
+  shutter.disabled=true;
+  try{
+    const canvas=document.createElement('canvas');
+    const maxSide=1920;
+    const ratio=Math.min(1,maxSide/Math.max(video.videoWidth,video.videoHeight));
+    canvas.width=Math.max(1,Math.round(video.videoWidth*ratio));
+    canvas.height=Math.max(1,Math.round(video.videoHeight*ratio));
+    canvas.getContext('2d').drawImage(video,0,0,canvas.width,canvas.height);
+    const dataUrl=canvas.toDataURL('image/jpeg',0.85);
+    closeInAppCamera();
+    if(photoSourceMode==='detail'){
+      const {tab,area,idx}=decKey(curKey);
+      const d=getList(tab,area)[idx];
+      await loadCustomerPhotos(d);
+      const previous=[...(d.photos||[])];
+      try{
+        d.photos=[...previous,dataUrl];
+        await saveCustomerPhotos(d);
+        if(!saveDB())throw new Error('metadata save failed');
+        await showDetail(curKey);
+      }catch(err){
+        d.photos=previous;
+        await saveCustomerPhotos(d);
+        throw err;
+      }
+    }else{
+      formPhotos.push(dataUrl);
+      renderFormPhotos();
+    }
+  }catch(err){
+    console.error('in-app photo capture failed',err);
+    alert('撮影した写真を保存できませんでした。空き容量などを確認してください。');
+  }finally{
+    inAppCameraBusy=false;
+    shutter.disabled=false;
+  }
+}
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&inAppCameraStream)closeInAppCamera();});
 
 /* ===== 写真機能 ===== */
 let formPhotos=[];
@@ -1795,6 +1887,7 @@ async function deleteViewingPhoto(){
   document.addEventListener('touchend',e=>{
     const dx=e.changedTouches[0].clientX-sx;
     const dy=e.changedTouches[0].clientY-sy;
+    if(document.getElementById('inapp-camera').classList.contains('open'))return;
     if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*2){
       if(dx>0){
         // 右スワイプ → 戻る
