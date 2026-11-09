@@ -387,6 +387,15 @@ function normalizeEsterProducts(value){
   }
   return base;
 }
+function formatUnloadMinutes(value){
+  const text=String(value??'').trim();
+  if(!text)return '';
+  if(/^\d+(?:\.\d+)?$/.test(text))return text+'分';
+  return text;
+}
+function onUnloadTimeBlur(input){
+  input.value=formatUnloadMinutes(input.value);
+}
 function esterInputId(prefix,p){
   return prefix+'-'+p.replace(/[^A-Za-z0-9]/g,c=>'x'+c.charCodeAt(0).toString(16));
 }
@@ -405,7 +414,7 @@ function setEsterProductsToForm(d,tab){
       return `<div class="ester-unload-row">
         <div class="ester-unload-name">${esc(p)}</div>
         <input class="ester-unload-input" id="${tonsId}" type="number" inputmode="decimal" step="0.01" min="0" placeholder="t" value="${esc(values[p].tons)}">
-        <input class="ester-unload-input" id="${timeId}" type="text" inputmode="numeric" placeholder="例 40分" value="${esc(values[p].time)}">
+        <input class="ester-unload-input" id="${timeId}" type="text" inputmode="numeric" placeholder="例 40分" value="${esc(formatUnloadMinutes(values[p].time))}" onblur="onUnloadTimeBlur(this)">
       </div>`;
     }).join('');
 }
@@ -415,7 +424,7 @@ function getEsterProductsFromForm(tab){
   ESTER_PRODUCTS.forEach(p=>{
     const tons=document.getElementById(esterInputId('f-tons',p));
     const time=document.getElementById(esterInputId('f-utime',p));
-    values[p]={tons:tons?tons.value.trim():'',time:time?time.value.trim():''};
+    values[p]={tons:tons?tons.value.trim():'',time:time?formatUnloadMinutes(time.value):''};
   });
   return values;
 }
@@ -428,7 +437,7 @@ function renderEsterProductsForDetail(d,tab){
     entered.map(p=>`<div class="ester-unload-detail">
       <div class="ester-unload-detail-name">${esc(p)}</div>
       <div class="ester-unload-detail-val">${values[p].tons?esc(values[p].tons)+' t':'--'}</div>
-      <div class="ester-unload-detail-val">${values[p].time?esc(values[p].time):'--'}</div>
+      <div class="ester-unload-detail-val">${values[p].time?esc(formatUnloadMinutes(values[p].time)):'--'}</div>
     </div>`).join('')+'</div>';
 }
 
