@@ -1921,7 +1921,7 @@ async function deleteViewingPhoto(){
 })();
 
 
-/* ===== PWA v2026.11.09.1: 既存保存キー・DB・Drive方式は変更しない ===== */
+/* ===== PWA v2026.11.09.2: 既存保存キー・DB・Drive方式は変更しない ===== */
 const PWA_VERSION='2026.11.09.1';
 const PWA_LAST_LOCAL_SAVE_KEY='niouroshi-pwa-last-local-save-v1';
 let pwaBackupError=false;
@@ -1974,3 +1974,4 @@ startApp();
 </body>
 </html>
 <!-- 変更履歴 2026-11-09 v2026.11.09.1: PWA manifest、Service Worker登録、起動/端末保存/Driveバックアップ状態表示を追加。既存のlocalStorage/IndexedDB/写真/JSON/Driveバックアップ/復元/カメラ機能を維持。 -->
+<!-- 変更履歴 2026-11-09 v2026.11.09.2: manifestの固有IDを /niouroshi-app/ に修正し、他のGitHub Pagesアプリとの識別重複を防止。既存データの保存先・キー・連携方式は変更なし。 -->
