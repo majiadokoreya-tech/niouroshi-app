@@ -75,6 +75,9 @@ input[type=file]{display:none}
 .photo-thumb{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;border:1px solid #e5e5e0;cursor:pointer}
 .photo-add{width:100%;aspect-ratio:1;border:1px dashed #c8c8c4;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:26px;color:#bbb;cursor:pointer;background:#fafaf8}
 .photo-add:active{background:#f0f0ec}
+.photo-source-actions{display:flex;gap:10px;padding:14px 16px 24px}
+.photo-source-btn{flex:1;border:1px solid #ddd;border-radius:12px;background:#fff;padding:17px 8px;font-size:15px;font-weight:600;cursor:pointer}
+.photo-source-btn:active{background:#f0f5ff}
 .photo-viewer{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.9);z-index:300;flex-direction:column;align-items:center;justify-content:center}
 .photo-viewer.open{display:flex}
 .photo-viewer img{max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px;touch-action:none;user-select:none;-webkit-user-select:none;transform-origin:center center;will-change:transform}
@@ -237,6 +240,7 @@ input[type=file]{display:none}
       <div class="form-label">写真</div>
       <div class="photo-grid" id="f-photo-grid"></div>
       <input type="file" id="f-photo-input" accept="image/*" multiple onchange="onPhotoSelected(event)">
+      <input type="file" id="f-camera-input" accept="image/*" capture="environment" onchange="onPhotoSelected(event)">
     </div>
     <div style="padding:8px 0 16px">
       <button class="save-btn" onclick="saveDest()">保存する</button>
@@ -254,6 +258,16 @@ input[type=file]{display:none}
       <input type="text" id="rate-search" placeholder="客先名で絞り込み" oninput="renderRateList()" autocomplete="off">
     </div>
     <div class="modal-list" id="rate-list"></div>
+  </div>
+</div>
+
+<div id="photo-source-modal" class="modal-overlay" onclick="closePhotoSourceBg(event)">
+  <div class="modal-sheet">
+    <div class="modal-header"><span class="modal-title">写真を追加</span><span class="modal-close" onclick="closePhotoSource()">閉じる</span></div>
+    <div class="photo-source-actions">
+      <button type="button" class="photo-source-btn" onclick="choosePhotoSource('camera')">📷 カメラで撮影</button>
+      <button type="button" class="photo-source-btn" onclick="choosePhotoSource('album')">🖼️ アルバムから選択</button>
+    </div>
   </div>
 </div>
 
@@ -1124,8 +1138,8 @@ async function showDetail(key){
   const photos=d.photos||[];
   html+=`<div class="section"><div class="section-label">写真</div><div class="photo-grid">`;
   photos.forEach((p,i)=>{html+=`<img class="photo-thumb" src="${p}" onclick="openPhotoViewer(${i})">`;});
-  html+=`<div class="photo-add" onclick="document.getElementById('detail-photo-input').click()">+</div>`;
-  html+=`</div><input type="file" id="detail-photo-input" accept="image/*" multiple onchange="onDetailPhotoSelected(event)"></div>`;
+  html+=`<div class="photo-add" onclick="openPhotoSource('detail')">+</div>`;
+  html+=`</div><input type="file" id="detail-photo-input" accept="image/*" multiple onchange="onDetailPhotoSelected(event)"><input type="file" id="detail-camera-input" accept="image/*" capture="environment" onchange="onDetailPhotoSelected(event)"></div>`;
   html+=`<button class="del-btn" onclick="deleteDest()">この客先を削除</button></div>`;
   document.getElementById('detail-body').innerHTML=html;
   hideAll();show('view-detail');
@@ -1640,6 +1654,23 @@ function initPhotoZoom(){
 }
 document.addEventListener('DOMContentLoaded',initPhotoZoom);
 
+/* 撮影またはアルバム選択。既存の写真保存処理を共用する */
+let photoSourceMode='form';
+function openPhotoSource(mode){
+  photoSourceMode=mode==='detail'?'detail':'form';
+  document.getElementById('photo-source-modal').classList.add('open');
+}
+function closePhotoSource(){document.getElementById('photo-source-modal').classList.remove('open');}
+function closePhotoSourceBg(e){if(e.target===document.getElementById('photo-source-modal'))closePhotoSource();}
+function choosePhotoSource(source){
+  const id=photoSourceMode==='detail'
+    ?(source==='camera'?'detail-camera-input':'detail-photo-input')
+    :(source==='camera'?'f-camera-input':'f-photo-input');
+  closePhotoSource();
+  const input=document.getElementById(id);
+  if(input)input.click();
+}
+
 /* ===== 写真機能 ===== */
 let formPhotos=[];
 let viewingPhotoIdx=-1;
@@ -1648,7 +1679,7 @@ function renderFormPhotos(){
   const grid=document.getElementById('f-photo-grid');
   if(!grid)return;
   let html=formPhotos.map((p,i)=>`<img class="photo-thumb" src="${p}" onclick="openFormPhotoViewer(${i})">`).join('');
-  html+=`<div class="photo-add" onclick="document.getElementById('f-photo-input').click()">+</div>`;
+  html+=`<div class="photo-add" onclick="openPhotoSource('form')">+</div>`;
   grid.innerHTML=html;
 }
 function onPhotoSelected(e){
