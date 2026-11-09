@@ -1,5 +1,5 @@
-/* 客先管理アプリ PWA v2026.11.09.1 */
-const CACHE_NAME='niouroshi-static-v20261109-1';
+/* 客先管理アプリ PWA v2026.11.09.2 */
+const CACHE_NAME='niouroshi-static-v20261109-2';
 const STATIC_FILES=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 const SCOPE=new URL(self.registration.scope);
 self.addEventListener('install',event=>{
