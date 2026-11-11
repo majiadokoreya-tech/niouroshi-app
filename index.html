@@ -136,6 +136,32 @@ input[type=file]{display:none}
 .pwa-status{padding:6px 12px;font-size:12px;color:#45616f;background:#eef5f8;border-bottom:1px solid #dce8ee;min-height:27px}
 .pwa-status[data-kind="error"]{color:#a33;background:#fff0ee}
 .pwa-status[data-kind="offline"]{color:#855500;background:#fff5dc}
+
+/* v2026.11.11.1: 現場で見やすい表示と横断検索 */
+body{background:#f2f5f8;color:#172334;font-size:16px}
+.nav-header{padding:16px;min-height:60px;box-shadow:0 2px 8px rgba(24,44,64,.05)}
+.screen-title{font-size:18px;line-height:1.4}
+.card-list{padding:14px}
+.row-card{min-height:76px;border:1px solid #e2e8f0;border-radius:15px;padding:16px;margin-bottom:11px;box-shadow:0 2px 6px rgba(25,45,75,.035)}
+.row-card-name{font-size:17px;line-height:1.45;white-space:normal;overflow-wrap:anywhere}
+.row-card-sub{font-size:13px;color:#607087;line-height:1.5;margin-top:5px}
+.row-card-arrow{font-size:25px;color:#5685b6}
+.add-card{min-height:60px;border-radius:14px;font-size:16px}
+.back-btn,.edit-link{font-size:16px;min-height:36px;display:inline-flex;align-items:center}
+.section-label{font-size:13px;color:#52677c}
+.info-key{font-size:14px;color:#52677c}
+.info-val,.note-box{font-size:16px;line-height:1.7;overflow-wrap:anywhere}
+.form-label{font-size:14px;color:#52677c;font-weight:600}
+.form-input,.form-textarea,.form-select{font-size:16px;min-height:46px}
+.search-panel{padding:14px 14px 8px;background:#fff;border-bottom:1px solid #e3e9ef}
+.search-title{font-size:13px;font-weight:700;color:#43566a;margin-bottom:8px}
+.search-control{display:flex;gap:8px;align-items:center}
+.search-control .form-input{flex:1;min-width:0;background:#f4f7fb;border-radius:12px;border-color:#dbe4ee;padding:12px}
+.search-clear{border:0;border-radius:10px;padding:12px;background:#e8eef5;color:#375571;font-size:14px;font-weight:700;min-height:46px}
+.search-count{font-size:13px;color:#51647a;font-weight:700;padding:12px 3px 8px}
+.search-hit{font-size:12px;color:#52677c;margin-top:5px;line-height:1.5;overflow-wrap:anywhere}
+.search-highlight{background:#fff0a6;border-radius:3px;padding:0 1px}
+@media(min-width:650px){#view-top,#view-area,#view-dest,#view-detail,#view-form{max-width:760px;margin:auto}.nav-header{border-left:1px solid #edf0f3;border-right:1px solid #edf0f3}}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -144,8 +170,12 @@ input[type=file]{display:none}
 <div id="view-top">
   <div class="nav-header"><span class="screen-title">荷卸し先</span></div>
   <div id="pwa-status" class="pwa-status" role="status" aria-live="polite">起動確認中…</div>
-  <div style="padding:10px 12px 0">
-    <input id="top-search" type="text" class="form-input" placeholder="客先名・記号で検索..." oninput="renderTopSearch()" autocomplete="off">
+  <div class="search-panel">
+    <div class="search-title">🔎 客先をまとめて検索</div>
+    <div class="search-control">
+      <input id="top-search" type="search" class="form-input" placeholder="客先名・記号・住所・メモ・地域" oninput="renderTopSearch()" autocomplete="off" aria-label="客先を検索">
+      <button type="button" class="search-clear" onclick="clearTopSearch()" aria-label="検索をクリア">クリア</button>
+    </div>
   </div>
   <div id="search-results" style="display:none;padding:0 12px"></div>
   <div id="recent-viewed" class="recent-section"></div>
@@ -1342,45 +1372,49 @@ async function deleteDest(){
 
 function getRateKey(){return['ester','sulfuric','polymer','chlorine','ammonia'][curProduct]||'ester';}
 
+function normalizeCustomerSearch(value){
+  return String(value==null?'':value).normalize('NFKC').toLowerCase().replace(/[\s\u3000]+/g,'');
+}
+function clearTopSearch(){
+  const input=document.getElementById('top-search');
+  input.value='';renderTopSearch();input.focus();
+}
 function renderTopSearch(){
-  const q=document.getElementById('top-search').value.trim().toLowerCase();
+  const raw=document.getElementById('top-search').value.trim();
+  const terms=raw.split(/[\s\u3000]+/).map(normalizeCustomerSearch).filter(Boolean);
   const sr=document.getElementById('search-results');
   const pl=document.getElementById('product-list');
-  if(!q){sr.style.display='none';sr.innerHTML='';pl.style.display='block';renderRecentViewed();return;}
+  if(!terms.length){sr.style.display='none';sr.innerHTML='';pl.style.display='block';renderRecentViewed();return;}
   document.getElementById('recent-viewed').innerHTML='';
-  pl.style.display='none';
-  sr.style.display='block';
+  pl.style.display='none';sr.style.display='block';
   const results=[];
   PRODUCTS.forEach((prod,tab)=>{
-    if(!HAS_AREA[tab]){
-      getList(tab,null).forEach((d,idx)=>{
-        if((d.name||'').toLowerCase().includes(q)||(d.symbol||'').toLowerCase().includes(q)){
-          results.push({tab,area:null,idx,d});
-        }
+    const areas=HAS_AREA[tab]?(tab===0?db.esterAreas:db.polymerAreas)||AREAS:[null];
+    areas.forEach(area=>{
+      getList(tab,area).forEach((d,idx)=>{
+        const name=String(d.name||'');const symbol=String(d.symbol||'');
+        const extra=[d.address,d.note,d.notes,d.requiredItems,d.residualLiquid,d.manhole,d.memo,d.destination,d.location,d.parking,d.unloadingPoint].filter(v=>typeof v==='string').join(' ');
+        const haystack=normalizeCustomerSearch([prod,area||'',name,symbol,extra].join(' '));
+        if(!terms.every(t=>haystack.includes(t)))return;
+        const n=normalizeCustomerSearch(name),sy=normalizeCustomerSearch(symbol);
+        const score=terms.reduce((sum,t)=>sum+(n===t?100:n.startsWith(t)?60:n.includes(t)?35:sy===t?70:sy.includes(t)?40:0),0);
+        results.push({tab,area,idx,d,score});
       });
-    } else {
-      const areas=tab===0?db.esterAreas:db.polymerAreas;
-      (areas||AREAS).forEach(area=>{
-        getList(tab,area).forEach((d,idx)=>{
-          if((d.name||'').toLowerCase().includes(q)||(d.symbol||'').toLowerCase().includes(q)){
-            results.push({tab,area,idx,d});
-          }
-        });
-      });
-    }
+    });
   });
-  if(!results.length){sr.innerHTML='<div class="empty-hint">該当する客先が見つかりません</div>';return;}
-  sr.innerHTML=results.map(({tab,area,idx,d})=>{
+  results.sort((a,b)=>b.score-a.score||String(a.d.name||'').localeCompare(String(b.d.name||''),'ja'));
+  if(!results.length){sr.innerHTML='<div class="search-count">検索結果 0件</div><div class="empty-hint">一致する客先がありません。住所やメモの単語でも検索できます。</div>';return;}
+  sr.innerHTML='<div class="search-count">検索結果 '+results.length+'件</div>'+results.map(({tab,area,idx,d})=>{
     const key=encKey(tab,area,idx);
-    const sub=[PRODUCTS[tab]];
-    if(area)sub.push(area);
-    if(d.allowance)sub.push('¥'+Number(d.allowance).toLocaleString());
+    const sub=[PRODUCTS[tab]];if(area)sub.push(area);
+    if(d.allowance)sub.push('手当 ¥'+Number(d.allowance).toLocaleString());
+    const detail=[d.address,d.note,d.notes,d.requiredItems,d.memo].find(v=>typeof v==='string'&&terms.some(t=>normalizeCustomerSearch(v).includes(t)))||'';
     return`<div class="row-card" onclick="searchJump('${key}')">
       <div class="row-card-body">
-        <div class="row-card-name">${d.symbol?`<span style="display:inline-block;background:#f0f0ec;border-radius:4px;padding:0 6px;font-size:13px;color:#555;margin-right:6px">${esc(d.symbol)}</span>`:''}${esc(d.name||'（名称未設定）')}</div>
+        <div class="row-card-name">${d.symbol?`<span style="display:inline-block;background:#eaf2ff;border-radius:6px;padding:2px 7px;font-size:13px;color:#22588c;margin-right:6px">${esc(d.symbol)}</span>`:''}${esc(d.name||'（名称未設定）')}</div>
         <div class="row-card-sub">${esc(sub.join(' › '))}</div>
-      </div>
-      <div class="row-card-arrow">›</div>
+        ${detail?`<div class="search-hit">${esc(String(detail).slice(0,95))}</div>`:''}
+      </div><div class="row-card-arrow">›</div>
     </div>`;
   }).join('');
 }
@@ -1975,3 +2009,4 @@ startApp();
 </html>
 <!-- 変更履歴 2026-11-09 v2026.11.09.1: PWA manifest、Service Worker登録、起動/端末保存/Driveバックアップ状態表示を追加。既存のlocalStorage/IndexedDB/写真/JSON/Driveバックアップ/復元/カメラ機能を維持。 -->
 <!-- 変更履歴 2026-11-09 v2026.11.09.2: manifestの固有IDを /niouroshi-app/ に修正し、他のGitHub Pagesアプリとの識別重複を防止。既存データの保存先・キー・連携方式は変更なし。 -->
+<!-- 変更履歴 2026-11-11 v2026.11.11.1: 客先名・記号・地域・住所・メモ等の横断検索、複数語検索、検索件数、検索クリア、検索結果の関連情報表示、文字サイズと余白・カード視認性を改善。既存保存キー・写真・Drive・バックアップ・PWA識別IDは維持。 -->
